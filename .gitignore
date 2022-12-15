@@ -32,5 +32,8 @@ build/
 .pub-cache/
 .pub/
 
+# Test results
+/reports/*
+
 # fvm
 /.fvm/flutter_sdk
