@@ -4,7 +4,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as p;
-import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
   MobileIO({
@@ -22,7 +21,7 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    await _verifyStoragePermissions();
+    await verifyStoragePermission();
 
     final provider = _fileProviderFactory.fromSource(fileSource);
 
@@ -37,7 +36,7 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    await _verifyStoragePermissions();
+    await verifyStoragePermission();
 
     final provider =
         _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
@@ -56,20 +55,12 @@ class MobileIO implements ArDriveIO {
       await requestPermissions();
     }
 
-    await _verifyStoragePermissions();
+    await verifyStoragePermission();
 
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
         as MultiFileProvider;
 
     return provider.getFolder();
-  }
-
-  Future<void> _verifyStoragePermissions() async {
-    final status = await Permission.storage.request();
-
-    if (status != PermissionStatus.granted) {
-      throw FileSystemPermissionDeniedException([Permission.storage]);
-    }
   }
 
   @override

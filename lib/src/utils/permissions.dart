@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:security_scoped_resource/security_scoped_resource.dart';
@@ -12,6 +13,10 @@ Future<void> requestPermissions() async {
 }
 
 Future<void> verifyPermissions() async {
+  if (await isAndroidSdkBiggerThan33()) {
+    return;
+  }
+
   List<Permission> deniedPermissions = [];
   if (await Permission.storage.isGranted) {
     return;
@@ -28,7 +33,7 @@ Future<void> verifyPermissions() async {
 }
 
 Future<void> verifyStoragePermission() async {
-  if (kIsWeb) {
+  if (kIsWeb || await isAndroidSdkBiggerThan33()) {
     return;
   }
 
@@ -59,4 +64,15 @@ Future<T> secureScopedAction<T>(
       .stopAccessingSecurityScopedResource(directory);
 
   return value;
+}
+
+Future<bool> isAndroidSdkBiggerThan33() async {
+  if (Platform.isAndroid) {
+    final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+    final AndroidDeviceInfo deviceInfo = await deviceInfoPlugin.androidInfo;
+
+    return (deviceInfo.version.sdkInt ?? 0) >= 33;
+  }
+
+  return false;
 }
