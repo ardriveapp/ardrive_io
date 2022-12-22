@@ -13,7 +13,7 @@ Future<void> requestPermissions() async {
 }
 
 Future<void> verifyPermissions() async {
-  if (await isAndroidSdkBiggerThan33()) {
+  if (await shouldSkipStoragePermissionCheck()) {
     return;
   }
 
@@ -33,7 +33,7 @@ Future<void> verifyPermissions() async {
 }
 
 Future<void> verifyStoragePermission() async {
-  if (kIsWeb || await isAndroidSdkBiggerThan33()) {
+  if (await shouldSkipStoragePermissionCheck()) {
     return;
   }
 
@@ -66,7 +66,12 @@ Future<T> secureScopedAction<T>(
   return value;
 }
 
-Future<bool> isAndroidSdkBiggerThan33() async {
+Future<bool> shouldSkipStoragePermissionCheck() async {
+  if (kIsWeb) {
+    return true;
+  }
+
+  // Android SDK >= 33
   if (Platform.isAndroid) {
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     final AndroidDeviceInfo deviceInfo = await deviceInfoPlugin.androidInfo;
