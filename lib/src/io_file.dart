@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:async/async.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -252,6 +253,8 @@ class _FromXFile implements IOFile {
 
   final XFile _file;
 
+  final int _readStreamChunkSize = 256 * 1024;
+
   @override
   String name;
 
@@ -275,8 +278,19 @@ class _FromXFile implements IOFile {
   }
     
   @override
-  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
-    return _file.openRead(start, end);
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async*{
+    int globalOffset = start;
+    int globalEnd = end ?? await _file.length();
+    while (globalOffset < globalEnd) {
+      final chunkEnd = globalOffset + _readStreamChunkSize > globalEnd
+          ? globalEnd
+          : globalOffset + _readStreamChunkSize;
+
+      final chunk = await collectBytes(_file.openRead(globalOffset, chunkEnd));
+      yield chunk;
+
+      globalOffset += _readStreamChunkSize;
+    }
   }
 
   @override

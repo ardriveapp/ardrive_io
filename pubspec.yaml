@@ -25,12 +25,12 @@ dependencies:
       url: https://github.com/thiagocarvalhodev/file_saver
       ref: fix-extension
   device_info_plus: ^8.0.0
+  async: ^2.9.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
   mocktail: ^0.2.0
-  async: ^2.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
