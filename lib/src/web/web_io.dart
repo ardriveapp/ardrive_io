@@ -253,7 +253,7 @@ class WebFile implements IOFile {
   }
 
   @override
-  FutureOr<int> get length async => (await readAsBytes()).length;
+  FutureOr<int> get length async => _bytes?.length ?? _file.size;
 
   @override
   String toString() {
