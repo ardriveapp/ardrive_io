@@ -18,6 +18,7 @@ abstract class IOFile implements IOEntity {
   FutureOr<int> get length;
   Future<Uint8List> readAsBytes();
   Future<String> readAsString();
+  Stream<Uint8List> openReadStream([int start = 0, int? end]);
 
   static final IOFileAdapter _ioFileAdapter = IOFileAdapter();
 
@@ -179,6 +180,11 @@ class _IOFile implements IOFile {
   }
 
   @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return _file.openRead(start, end) as Stream<Uint8List>;
+  }
+
+  @override
   String toString() {
     return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
@@ -222,6 +228,11 @@ class _DataFile implements IOFile {
   }
 
   @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return Stream.value(_bytes.sublist(start, end));
+  }
+
+  @override
   int get length => _bytes.length;
 
   @override
@@ -261,6 +272,11 @@ class _FromXFile implements IOFile {
   @override
   Future<String> readAsString() {
     return _file.readAsString();
+  }
+    
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return _file.openRead(start, end);
   }
 
   @override

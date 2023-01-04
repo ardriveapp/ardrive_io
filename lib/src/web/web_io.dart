@@ -194,6 +194,8 @@ class WebFile implements IOFile {
 
   Uint8List? _bytes;
 
+  final int _readStreamChunkSize = 256 * 1024;
+
   @override
   String name;
 
@@ -222,6 +224,32 @@ class WebFile implements IOFile {
   @override
   Future<String> readAsString() async {
     return utf8.decode(await readAsBytes());
+  }
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
+    if (_bytes != null) {
+      yield _bytes!.sublist(start, end ?? _bytes!.length);
+      return;
+    }
+
+    final reader = FileReader();
+
+    int globalOffset = start;
+    int globalEnd = end ?? _file.size;
+    while (globalOffset < globalEnd) {
+      final chunkEnd = globalOffset + _readStreamChunkSize > globalEnd
+          ? globalEnd
+          : globalOffset + _readStreamChunkSize;
+
+      final blob = _file.slice(globalOffset, chunkEnd);
+      reader.readAsArrayBuffer(blob);
+      await reader.onLoad.first;
+
+      yield reader.result as Uint8List;
+
+      globalOffset += _readStreamChunkSize;
+    }
   }
 
   @override
