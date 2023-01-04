@@ -181,7 +181,7 @@ class _IOFile implements IOFile {
 
   @override
   Stream<Uint8List> openReadStream([int start = 0, int? end]) {
-    return _file.openRead(start, end) as Stream<Uint8List>;
+    return _file.openRead(start, end).map((data) => data as Uint8List);
   }
 
   @override
