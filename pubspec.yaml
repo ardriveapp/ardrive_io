@@ -11,7 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  file_picker: ^5.2.4
+  file_picker:
+    git: 
+      url: https://github.com/elliotsayes/flutter_file_picker
+      ref: cd7a034bb1cd9bfa28e15bf6fc22c84e9b9bb067
   path_provider: ^2.0.11
   permission_handler: ^10.0.0
   mime: ^1.0.2

@@ -89,6 +89,16 @@ class WebFileSystemProvider implements MultiFileProvider {
     return _ioFolderAdapter.fromIOFiles(files);
   }
 
+  Future<IOFile> _platformFileToStreamFile(PlatformFile platformFile) {
+    return _ioFileAdapter.fromReadStreamGenerator(
+      platformFile.readStream!,
+      platformFile.size,
+      name: platformFile.name,
+      lastModifiedDate: DateTime.now(),
+      contentType: lookupMimeTypeWithDefaultType(platformFile.extension ?? ''),
+    );
+  }
+
   @override
   Future<IOFile> pickFile({
     List<String>? allowedExtensions,
@@ -97,6 +107,7 @@ class WebFileSystemProvider implements MultiFileProvider {
     final pickerResult = await FilePicker.platform.pickFiles(
       allowedExtensions: allowedExtensions,
       allowMultiple: false,
+      withReadStream: true,
       withData: false,
     );
 
@@ -104,7 +115,7 @@ class WebFileSystemProvider implements MultiFileProvider {
       throw ActionCanceledException();
     }
     
-    return _ioFileAdapter.fromFilePicker(pickerResult.files.first);
+    return _platformFileToStreamFile(pickerResult.files.first);
   }
 
   @override
@@ -115,6 +126,7 @@ class WebFileSystemProvider implements MultiFileProvider {
     final pickerResult = await FilePicker.platform.pickFiles(
       allowedExtensions: allowedExtensions,
       allowMultiple: true,
+      withReadStream: true,
       withData: false,
     );
 
@@ -123,9 +135,7 @@ class WebFileSystemProvider implements MultiFileProvider {
     }
 
     return Future.wait(
-      pickerResult.files.map(
-        (platformFile) => _ioFileAdapter.fromFilePicker(platformFile)
-      ).toList()
+      pickerResult.files.map(_platformFileToStreamFile).toList()
     );
   }
 }

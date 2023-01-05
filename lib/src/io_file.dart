@@ -144,6 +144,23 @@ class IOFileAdapter {
       name: name,
     );
   }
+
+  Future<IOFile> fromReadStreamGenerator(
+    Stream<Uint8List> Function([int? s, int? e]) openReadStream,
+    int length, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async {
+    return _StreamFile(
+      openReadStream,
+      length,
+      contentType: contentType ?? lookupMimeTypeWithDefaultType(name),
+      path: '',
+      lastModifiedDate: lastModifiedDate,
+      name: name,
+    );
+  }
 }
 
 /// An implementation class that uses `dart:io` `File`
@@ -235,6 +252,57 @@ class _DataFile implements IOFile {
 
   @override
   int get length => _bytes.length;
+
+  @override
+  String toString() {
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
+  }
+}
+
+/// `IOFile` implementation with the given `bytes`.
+class _StreamFile implements IOFile {
+  _StreamFile(
+    this._openReadStream, 
+    this._length, {
+    required this.contentType,
+    required this.lastModifiedDate,
+    required this.name,
+    required this.path,
+  });
+
+  final Stream<Uint8List> Function([int? s, int? e]) _openReadStream;
+
+  final int _length;
+
+  @override
+  final String contentType;
+
+  @override
+  final DateTime lastModifiedDate;
+
+  @override
+  final String name;
+
+  @override
+  final String path;
+
+  @override
+  Future<Uint8List> readAsBytes() async {
+    return collectBytes(_openReadStream());
+  }
+
+  @override
+  Future<String> readAsString() async {
+    return utf8.decode(await readAsBytes());
+  }
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return _openReadStream(start, end);
+  }
+
+  @override
+  int get length => _length;
 
   @override
   String toString() {
