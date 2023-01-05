@@ -14,7 +14,7 @@ dependencies:
   file_picker:
     git: 
       url: https://github.com/elliotsayes/flutter_file_picker
-      ref: cd7a034bb1cd9bfa28e15bf6fc22c84e9b9bb067
+      ref: 6cdf207ba762c6bc1ee688bbd8f217efcc4bb041
   path_provider: ^2.0.11
   permission_handler: ^10.0.0
   mime: ^1.0.2
