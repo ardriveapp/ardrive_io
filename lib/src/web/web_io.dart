@@ -5,6 +5,7 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 
 /// Web implementation to use `ArDriveIO` API
@@ -93,15 +94,17 @@ class WebFileSystemProvider implements MultiFileProvider {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    final file = await file_selector.openFile(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+    final pickerResult = await FilePicker.platform.pickFiles(
+      allowedExtensions: allowedExtensions,
+      allowMultiple: false,
+      withData: false,
+    );
 
-    if (file == null) {
+    if (pickerResult == null || pickerResult.files.length != 1) {
       throw ActionCanceledException();
     }
-
-    return _ioFileAdapter.fromWebXFile(file);
+    
+    return _ioFileAdapter.fromFilePicker(pickerResult.files.first);
   }
 
   @override
@@ -109,16 +112,21 @@ class WebFileSystemProvider implements MultiFileProvider {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    final xFiles = await file_selector.openFiles(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+    final pickerResult = await FilePicker.platform.pickFiles(
+      allowedExtensions: allowedExtensions,
+      allowMultiple: true,
+      withData: false,
+    );
 
-    if (xFiles.isEmpty) {
+    if (pickerResult == null || pickerResult.files.isEmpty) {
       throw ActionCanceledException();
     }
 
     return Future.wait(
-        xFiles.map((xfile) => _ioFileAdapter.fromWebXFile(xfile)).toList());
+      pickerResult.files.map(
+        (platformFile) => _ioFileAdapter.fromFilePicker(platformFile)
+      ).toList()
+    );
   }
 }
 
