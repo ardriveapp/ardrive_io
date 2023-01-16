@@ -94,7 +94,7 @@ class WebFileSystemProvider implements MultiFileProvider {
       platformFile.readStream!,
       platformFile.size,
       name: platformFile.name,
-      lastModifiedDate: platformFile.lastModified ?? DateTime.now(),
+      lastModifiedDate: DateTime.now(),
       contentType: lookupMimeTypeWithDefaultType(platformFile.extension ?? ''),
     );
   }
