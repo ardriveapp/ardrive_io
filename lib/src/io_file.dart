@@ -9,6 +9,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
+const readStreamChunkSize = 256 * 1024;
+
 /// Base class for agnostic platform Files.
 ///
 /// `contentType` is the file's MIME-TYPE
@@ -321,8 +323,6 @@ class _FromXFile implements IOFile {
 
   final XFile _file;
 
-  final int _readStreamChunkSize = 256 * 1024;
-
   @override
   String name;
 
@@ -350,14 +350,14 @@ class _FromXFile implements IOFile {
     int globalOffset = start;
     int globalEnd = end ?? await _file.length();
     while (globalOffset < globalEnd) {
-      final chunkEnd = globalOffset + _readStreamChunkSize > globalEnd
+      final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
           ? globalEnd
-          : globalOffset + _readStreamChunkSize;
+          : globalOffset + readStreamChunkSize;
 
       final chunk = await collectBytes(_file.openRead(globalOffset, chunkEnd));
       yield chunk;
 
-      globalOffset += _readStreamChunkSize;
+      globalOffset += readStreamChunkSize;
     }
   }
 
