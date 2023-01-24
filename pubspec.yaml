@@ -13,8 +13,8 @@ dependencies:
     sdk: flutter
   file_picker:
     git: 
-      url: https://github.com/elliotsayes/flutter_file_picker
-      ref: 6cdf207ba762c6bc1ee688bbd8f217efcc4bb041
+      url: https://github.com/ar-io/flutter_file_picker
+      ref: master
   path_provider: ^2.0.11
   permission_handler: ^10.0.0
   mime: ^1.0.2
