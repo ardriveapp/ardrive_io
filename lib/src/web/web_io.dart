@@ -94,7 +94,7 @@ class WebFileSystemProvider implements MultiFileProvider {
       platformFile.readStream!,
       platformFile.size,
       name: platformFile.name,
-      lastModifiedDate: DateTime.now(),
+      lastModifiedDate: platformFile.lastModified ?? DateTime.now(),
       contentType: lookupMimeTypeWithDefaultType(platformFile.extension ?? ''),
     );
   }
@@ -114,7 +114,7 @@ class WebFileSystemProvider implements MultiFileProvider {
     if (pickerResult == null || pickerResult.files.length != 1) {
       throw ActionCanceledException();
     }
-    
+
     return _platformFileToStreamFile(pickerResult.files.first);
   }
 
@@ -135,8 +135,7 @@ class WebFileSystemProvider implements MultiFileProvider {
     }
 
     return Future.wait(
-      pickerResult.files.map(_platformFileToStreamFile).toList()
-    );
+        pickerResult.files.map(_platformFileToStreamFile).toList());
   }
 }
 
