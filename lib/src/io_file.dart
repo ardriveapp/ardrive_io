@@ -158,7 +158,6 @@ class IOFileAdapter {
       openReadStream,
       length,
       contentType: contentType ?? lookupMimeTypeWithDefaultType(name),
-      path: '',
       lastModifiedDate: lastModifiedDate,
       name: name,
     );
@@ -264,12 +263,11 @@ class _DataFile implements IOFile {
 /// `IOFile` implementation with the given `bytes`.
 class _StreamFile implements IOFile {
   _StreamFile(
-    this._openReadStream, 
+    this._openReadStream,
     this._length, {
     required this.contentType,
     required this.lastModifiedDate,
     required this.name,
-    required this.path,
   });
 
   final Stream<Uint8List> Function([int? s, int? e]) _openReadStream;
@@ -285,8 +283,9 @@ class _StreamFile implements IOFile {
   @override
   final String name;
 
+  /// It was generated from a BLOB stream
   @override
-  final String path;
+  final String path = '';
 
   @override
   Future<Uint8List> readAsBytes() async {
@@ -344,9 +343,9 @@ class _FromXFile implements IOFile {
   Future<String> readAsString() {
     return _file.readAsString();
   }
-    
+
   @override
-  Stream<Uint8List> openReadStream([int start = 0, int? end]) async*{
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
     int globalOffset = start;
     int globalEnd = end ?? await _file.length();
     while (globalOffset < globalEnd) {
