@@ -38,7 +38,7 @@ class WebIO implements ArDriveIO {
   }
 
   @override
-  Future<void> saveFileStream(IOFile file) {
+  Future<bool> saveFileStream(IOFile file, Future<bool> verified) {
     // TODO: implement saveFile
     throw UnimplementedError();
   }

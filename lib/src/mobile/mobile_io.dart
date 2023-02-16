@@ -73,9 +73,9 @@ class MobileIO implements ArDriveIO {
   }
 
   @override
-  Future<void> saveFileStream(IOFile file) async {
+  Future<bool> saveFileStream(IOFile file, Future<bool> verified) async {
     try {
-      await _fileSaver.saveStream(file);
+      return await _fileSaver.saveStream(file, verified);
     } catch (e) {
       rethrow;
     }
@@ -103,7 +103,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
   }
   
   @override
-  Future<void> saveStream(IOFile file) {
+  Future<bool> saveStream(IOFile file, Future<bool> verified) {
     // file_saver doesn't seem to support support saving streams
     // TODO: implement saveStream
     throw UnimplementedError();
@@ -136,7 +136,10 @@ class DartIOFileSaver implements FileSaver {
   }
   
   @override
-  Future<void> saveStream(IOFile file) async {
+  Future<bool> saveStream(IOFile file, Future<bool> verified) async {
+    var abort = false;
+    verified.then((ok) {if (!ok) abort = true;});
+    
     await requestPermissions();
     await verifyPermissions();
 
@@ -157,20 +160,31 @@ class DartIOFileSaver implements FileSaver {
     final sink = newFile.openWrite();
 
     // NOTE: This is an alternative to `addStream` with lower level control
-    // const flushThresholdBytes = 100 * 1024 * 1024; // 100 MiB
-    // var unflushedDataBytes = 0;
-    // await for (final chunk in file.openReadStream()) {
-    //   sink.add(chunk);
-    //   unflushedDataBytes += chunk.length;
-    //   if (unflushedDataBytes > flushThresholdBytes) {
-    //     await sink.flush();
-    //     unflushedDataBytes = 0;
-    //   }
-    // }
+    const flushThresholdBytes = 10 * 1024 * 1024; // 10 MiB
+    var unflushedDataBytes = 0;
+    await for (final chunk in file.openReadStream()) {
+      if (abort) break;
+
+      sink.add(chunk);
+      unflushedDataBytes += chunk.length;
+      if (unflushedDataBytes > flushThresholdBytes) {
+        await sink.flush();
+        unflushedDataBytes = 0;
+      }
+    }
+    await sink.flush();
+    await sink.close();
+    
+    // await sink.addStream(file.openReadStream());
     // await sink.flush();
     // await sink.close();
-    
-    await sink.addStream(file.openReadStream());
+
+    final ok = await verified;
+    if (!ok) {
+      await newFile.delete();
+    }
+
+    return ok;
   }
 }
 
@@ -186,5 +200,5 @@ abstract class FileSaver {
 
   Future<void> save(IOFile file);
 
-  Future<void> saveStream(IOFile file);
+  Future<bool> saveStream(IOFile file, Future<bool> verified);
 }

@@ -64,7 +64,10 @@ class WebIO implements ArDriveIO {
   }
 
   @override
-  Future<void> saveFileStream(IOFile file) async {
+  Future<bool> saveFileStream(IOFile file, Future<bool> verified) async {
+    var abort = false;
+    verified.then((ok) {if (!ok) abort = true;});
+
     if (!FileSystemAccess.supported) {
       throw UnsupportedError('Client does not support File System Access API');
     }
@@ -86,14 +89,6 @@ class WebIO implements ArDriveIO {
         startIn: WellKnownDirectory.downloads
       );
 
-      final writable = await handle.createWritable();
-      final writer =  writable.getWriter();
-
-      await for (final chunk in file.openReadStream()) {
-        await writer.write(chunk);
-      }
-      await writer.close();
-
       // final accessHandle = await handle.createSyncAccessHandle();
 
       // var writeOffset = 0;
@@ -104,6 +99,24 @@ class WebIO implements ArDriveIO {
 
       // accessHandle.flush();
       // accessHandle.close();
+
+      final writable = await handle.createWritable();
+      final writer =  writable.getWriter();
+
+      await for (final chunk in file.openReadStream()) {
+        if (abort) break;
+
+        await writer.write(chunk);
+      }
+      await writer.close();
+      await writable.close();
+
+      final ok = await verified;
+      if (!ok) {
+        await handle.remove();
+      }
+
+      return ok;
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
       throw EntityPathException();
