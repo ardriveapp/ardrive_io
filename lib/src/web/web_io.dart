@@ -109,7 +109,6 @@ class WebIO implements ArDriveIO {
         await writer.write(chunk);
       }
       writer.releaseLock();
-      await writer.close();
       await writable.close();
 
       final ok = await verified;
