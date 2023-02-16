@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_system_access_api/file_system_access_api.dart';
 
 /// Web implementation to use `ArDriveIO` API
 ///
@@ -60,6 +61,56 @@ class WebIO implements ArDriveIO {
       mimeType: file.contentType,
       name: file.name,
     ).saveTo(savePath);
+  }
+
+  @override
+  Future<void> saveFileStream(IOFile file) async {
+    if (!FileSystemAccess.supported) {
+      throw UnsupportedError('Client does not support File System Access API');
+    }
+
+    final extension = getFileExtension(name: file.name, contentType: file.contentType);
+
+    try {
+      final handle = await window.showSaveFilePicker(
+        suggestedName: file.name,
+        excludeAcceptAllOption: true,
+        types: [
+          FilePickerAcceptType(
+            description: file.contentType,
+            accept: {
+              file.contentType: [extension]
+            },
+          ),
+        ],
+        startIn: WellKnownDirectory.downloads
+      );
+
+      final writable = await handle.createWritable();
+      final writer =  writable.getWriter();
+
+      await for (final chunk in file.openReadStream()) {
+        await writer.write(chunk);
+      }
+      await writer.close();
+
+      // final accessHandle = await handle.createSyncAccessHandle();
+
+      // var writeOffset = 0;
+      // await for (final chunk in file.openReadStream()) {
+      //   final writeCountBytes = accessHandle.write(chunk, offset: writeOffset);
+      //   writeOffset += writeCountBytes;
+      // }
+
+      // accessHandle.flush();
+      // accessHandle.close();
+    } on AbortError {
+      // User dismissed dialog or picked a file deemed too sensitive or dangerous.
+      throw EntityPathException();
+    } on NotAllowedError {
+      // User did not granted permission to readwrite in this file.
+      throw EntityPathException();
+    }
   }
 }
 

@@ -36,4 +36,6 @@ abstract class ArDriveIO {
   Future<IOFolder> pickFolder();
 
   Future<void> saveFile(IOFile file);
+
+  Future<void> saveFileStream(IOFile file);
 }

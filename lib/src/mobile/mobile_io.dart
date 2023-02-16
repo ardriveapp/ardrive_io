@@ -71,6 +71,15 @@ class MobileIO implements ArDriveIO {
       rethrow;
     }
   }
+
+  @override
+  Future<void> saveFileStream(IOFile file) async {
+    try {
+      await _fileSaver.saveStream(file);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 /// Opens the file picker dialog to select the folder to save
@@ -91,6 +100,13 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     );
 
     return;
+  }
+  
+  @override
+  Future<void> saveStream(IOFile file) {
+    // file_saver doesn't seem to support support saving streams
+    // TODO: implement saveStream
+    throw UnimplementedError();
   }
 }
 
@@ -118,6 +134,44 @@ class DartIOFileSaver implements FileSaver {
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
+  
+  @override
+  Future<void> saveStream(IOFile file) async {
+    await requestPermissions();
+    await verifyPermissions();
+
+    String fileName = file.name;
+
+    /// handles files without extension
+    if (p.extension(file.name).isEmpty) {
+      final fileExtension = mime.extensionFromMime(file.contentType);
+
+      fileName += '.$fileExtension';
+    }
+
+    /// platform_specific_path/Downloads/
+    final defaultDownloadDir = await getDefaultMobileDownloadDir();
+
+    final newFile = File(defaultDownloadDir + fileName);
+
+    final sink = newFile.openWrite();
+
+    // NOTE: This is an alternative to `addStream` with lower level control
+    // const flushThresholdBytes = 100 * 1024 * 1024; // 100 MiB
+    // var unflushedDataBytes = 0;
+    // await for (final chunk in file.openReadStream()) {
+    //   sink.add(chunk);
+    //   unflushedDataBytes += chunk.length;
+    //   if (unflushedDataBytes > flushThresholdBytes) {
+    //     await sink.flush();
+    //     unflushedDataBytes = 0;
+    //   }
+    // }
+    // await sink.flush();
+    // await sink.close();
+    
+    await sink.addStream(file.openReadStream());
+  }
 }
 
 /// Defines the API for saving `IOFile` on Storage
@@ -131,4 +185,6 @@ abstract class FileSaver {
   }
 
   Future<void> save(IOFile file);
+
+  Future<void> saveStream(IOFile file);
 }

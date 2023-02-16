@@ -36,6 +36,12 @@ class WebIO implements ArDriveIO {
     // TODO: implement saveFile
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> saveFileStream(IOFile file) {
+    // TODO: implement saveFile
+    throw UnimplementedError();
+  }
 }
 
 class FolderPicker {
