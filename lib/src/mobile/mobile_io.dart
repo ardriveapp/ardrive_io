@@ -192,7 +192,7 @@ class DartIOFileSaver implements FileSaver {
 abstract class FileSaver {
   factory FileSaver() {
     if (Platform.isAndroid || Platform.isIOS) {
-      return MobileSelectableFolderFileSaver();
+      return DartIOFileSaver();
     }
     throw UnsupportedPlatformException(
         'The ${Platform.operatingSystem} platform is not supported');
