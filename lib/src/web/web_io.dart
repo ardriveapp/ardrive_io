@@ -149,8 +149,8 @@ class WebIO implements ArDriveIO {
         print('CAUTION! File not verified, removing file from disk...');
         await writable.abortFuture('File not verified');
       } else {
+        await writer.closeFuture();
         writer.releaseLock();
-        await writable.closeFuture();
       }
       
       return ok;
