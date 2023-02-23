@@ -143,6 +143,7 @@ class WebIO implements ArDriveIO {
         await writer.readyFuture;
         await writer.writeFuture(chunk);
       }
+      await writer.readyFuture;
 
       final ok = await verified;
       if (!ok) {
