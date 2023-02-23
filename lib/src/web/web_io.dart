@@ -5,9 +5,11 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/web/stream_saver.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:file_system_access_api/file_system_access_api.dart';
+import 'package:flutter/foundation.dart';
 
 /// Web implementation to use `ArDriveIO` API
 ///
@@ -65,12 +67,18 @@ class WebIO implements ArDriveIO {
 
   @override
   Future<bool> saveFileStream(IOFile file, Future<bool> verified) async {
+    if (FileSystemAccess.supported) {
+      debugPrint('Saving using FileSystemAccess API');
+      return await _saveFileSystemAccessApi(file, verified);
+    } else {
+      debugPrint('Saving using StreamSaver.js');
+      return await _saveFileStreamSaver(file, verified);
+    }
+  }
+
+  Future<bool> _saveFileSystemAccessApi(IOFile file, Future<bool> verified) async {
     var abort = false;
     verified.then((ok) {if (!ok) abort = true;});
-
-    if (!FileSystemAccess.supported) {
-      throw UnsupportedError('Client does not support File System Access API');
-    }
 
     final extension = getFileExtension(name: file.name, contentType: file.contentType);
 
@@ -89,23 +97,12 @@ class WebIO implements ArDriveIO {
         startIn: WellKnownDirectory.downloads
       );
 
-      // final accessHandle = await handle.createSyncAccessHandle();
-
-      // var writeOffset = 0;
-      // await for (final chunk in file.openReadStream()) {
-      //   final writeCountBytes = accessHandle.write(chunk, offset: writeOffset);
-      //   writeOffset += writeCountBytes;
-      // }
-
-      // accessHandle.flush();
-      // accessHandle.close();
-
       final writable = await handle.createWritable();
       final writer =  writable.getWriter();
 
       await for (final chunk in file.openReadStream()) {
         if (abort) break;
-
+        await writer.ready;
         await writer.write(chunk);
       }
       writer.releaseLock();
@@ -113,6 +110,7 @@ class WebIO implements ArDriveIO {
 
       final ok = await verified;
       if (!ok) {
+        print('CAUTION! File not verified, removing file from disk...');
         await handle.remove();
       }
 
@@ -123,6 +121,41 @@ class WebIO implements ArDriveIO {
     } on NotAllowedError {
       // User did not granted permission to readwrite in this file.
       throw EntityPathException();
+    } on Exception {
+      return false;
+    }
+  }
+
+  Future<bool> _saveFileStreamSaver(IOFile file, Future<bool> verified) async {
+    var abort = false;
+    verified.then((ok) {if (!ok) abort = true;});
+
+    final extension = getFileExtension(name: file.name, contentType: file.contentType);
+
+    try {
+      final writable = createWriteStream(file.name, {
+        'size': await file.length,
+      });
+      final writer = writable.getWriter();
+      
+      await for (final chunk in file.openReadStream()) {
+        if (abort) break;
+        await writer.readyFuture;
+        await writer.writeFuture(chunk);
+      }
+
+      final ok = await verified;
+      if (!ok) {
+        print('CAUTION! File not verified, removing file from disk...');
+        await writable.abortFuture('File not verified');
+      } else {
+        writer.releaseLock();
+        await writable.closeFuture();
+      }
+      
+      return ok;
+    } on Exception {
+      return false;
     }
   }
 }
