@@ -117,12 +117,12 @@ class DartIOFileSaver implements FileSaver {
     String testFileName;
     int counter = 0;
     while (true) {
-      final basename = p.basename(fileName);
+      final baseWithoutExt = p.basenameWithoutExtension(fileName);
 
       if (counter == 0) {
-        testFileName = basename;
+        testFileName = baseWithoutExt;
       } else {
-        testFileName = '$basename ($counter)';
+        testFileName = '$baseWithoutExt ($counter)';
       }
 
       var extension = p.extension(fileName);
