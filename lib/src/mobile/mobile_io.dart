@@ -113,24 +113,40 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 /// Saves a file using the `dart:io` library.
 /// It will save on `getDefaultMobileDownloadDir()`
 class DartIOFileSaver implements FileSaver {
+  Future<File> _emptyFile(IOFile ioFile, String saveDir) async {
+    var counter = 0;
+    String fileName;
+    File testFile;
+    while (true) {
+      final basename = p.basename(ioFile.name);
+      var extension = p.extension(ioFile.name);
+      if (extension.isEmpty) {
+        extension = mime.extensionFromMime(ioFile.contentType);
+      }
+
+      if (counter == 0) {
+        fileName = basename + '.' + extension;
+      } else {
+        fileName = '$basename ($counter).$extension';
+      }
+
+      testFile = File(saveDir + fileName);
+      if (!await testFile.exists()) break;
+      counter++;
+    }
+
+    return testFile;
+  }
+
   @override
   Future<void> save(IOFile file) async {
     await requestPermissions();
     await verifyPermissions();
 
-    String fileName = file.name;
-
-    /// handles files without extension
-    if (p.extension(file.name).isEmpty) {
-      final fileExtension = mime.extensionFromMime(file.contentType);
-
-      fileName += '.$fileExtension';
-    }
-
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = File(defaultDownloadDir + fileName);
+    final newFile = await _emptyFile(file, defaultDownloadDir);
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
@@ -143,19 +159,10 @@ class DartIOFileSaver implements FileSaver {
     await requestPermissions();
     await verifyPermissions();
 
-    String fileName = file.name;
-
-    /// handles files without extension
-    if (p.extension(file.name).isEmpty) {
-      final fileExtension = mime.extensionFromMime(file.contentType);
-
-      fileName += '.$fileExtension';
-    }
-
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = File(defaultDownloadDir + fileName);
+    final newFile = await _emptyFile(file, defaultDownloadDir);
 
     final sink = newFile.openWrite();
 
