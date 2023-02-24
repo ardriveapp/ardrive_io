@@ -125,9 +125,11 @@ class DartIOFileSaver implements FileSaver {
         testFileName = '$baseWithoutExt ($counter)';
       }
 
-      var extension = p.extension(fileName);
-      if (extension.isEmpty) {
-        extension = mime.extensionFromMime(fileContentType ?? '');
+      var extension = p.extension(fileName); // includes '.'
+      if (extension.isNotEmpty) {
+        extension = extension.substring(1);
+      } else {
+        extension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
       }
       
       if (extension.isNotEmpty) {
