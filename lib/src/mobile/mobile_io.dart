@@ -113,31 +113,37 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 /// Saves a file using the `dart:io` library.
 /// It will save on `getDefaultMobileDownloadDir()`
 class DartIOFileSaver implements FileSaver {
-  static Future<String> emptyFileName(String fileName, String fileContentType, String saveDir) async {
+  Future<String> emptyFileName(String saveDir, String fileName, String? fileContentType) async {
     String testFileName;
     int counter = 0;
     while (true) {
       final basename = p.basename(fileName);
-      var extension = p.extension(fileName);
-      if (extension.isEmpty) {
-        extension = mime.extensionFromMime(fileContentType);
-      }
 
       if (counter == 0) {
-        testFileName = basename + '.' + extension;
+        testFileName = basename;
       } else {
-        testFileName = '$basename ($counter).$extension';
+        testFileName = '$basename ($counter)';
+      }
+
+      var extension = p.extension(fileName);
+      if (extension.isEmpty) {
+        extension = mime.extensionFromMime(fileContentType ?? '');
+      }
+      
+      if (extension.isNotEmpty) {
+        testFileName += '.$extension';
       }
 
       final testFile = File(saveDir + testFileName);
       if (!await testFile.exists()) break;
+      
       counter++;
     }
 
     return testFileName;
   }
 
-  static Future<File> emptyFile(IOFile ioFile, String saveDir) async {
+  Future<File> emptyFile(String saveDir, IOFile ioFile) async {
     final fileName = await emptyFileName(ioFile.name, ioFile.contentType, saveDir);
     return File(saveDir + fileName);
   }
@@ -150,7 +156,7 @@ class DartIOFileSaver implements FileSaver {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = await emptyFile(file, defaultDownloadDir);
+    final newFile = await emptyFile(defaultDownloadDir, file);
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
@@ -166,7 +172,7 @@ class DartIOFileSaver implements FileSaver {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = await emptyFile(file, defaultDownloadDir);
+    final newFile = await emptyFile(defaultDownloadDir, file);
 
     final sink = newFile.openWrite();
 

@@ -21,12 +21,12 @@ class ArDriveDownloader {
 
   String get currentTaskId => _currentTaskId;
 
-  Stream<int> downloadFile(String downloadUrl, String fileName, String contentType) async* {
+  Stream<int> downloadFile(String downloadUrl, String fileName, String? contentType) async* {
     await requestPermissions();
     await verifyPermissions();
-    
+
     final downloadDir = await getDefaultMobileDownloadDir();
-    final saveFileName = await DartIOFileSaver.emptyFileName(fileName, contentType, downloadDir);
+    final saveFileName = await DartIOFileSaver().emptyFileName(downloadDir, fileName, contentType);
 
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
