@@ -146,7 +146,7 @@ class DartIOFileSaver implements FileSaver {
   }
 
   Future<File> emptyFile(String saveDir, IOFile ioFile) async {
-    final fileName = await emptyFileName(ioFile.name, ioFile.contentType, saveDir);
+    final fileName = await emptyFileName(saveDir, ioFile.name, ioFile.contentType);
     return File(saveDir + fileName);
   }
 
