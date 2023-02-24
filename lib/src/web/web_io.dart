@@ -130,8 +130,6 @@ class WebIO implements ArDriveIO {
     var abort = false;
     verified.then((ok) {if (!ok) abort = true;});
 
-    final extension = getFileExtension(name: file.name, contentType: file.contentType);
-
     try {
       final writable = createWriteStream(file.name, {
         'size': await file.length,

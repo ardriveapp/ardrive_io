@@ -113,29 +113,33 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 /// Saves a file using the `dart:io` library.
 /// It will save on `getDefaultMobileDownloadDir()`
 class DartIOFileSaver implements FileSaver {
-  Future<File> _emptyFile(IOFile ioFile, String saveDir) async {
-    var counter = 0;
-    String fileName;
-    File testFile;
+  static Future<String> emptyFileName(String fileName, String fileContentType, String saveDir) async {
+    String testFileName;
+    int counter = 0;
     while (true) {
-      final basename = p.basename(ioFile.name);
-      var extension = p.extension(ioFile.name);
+      final basename = p.basename(fileName);
+      var extension = p.extension(fileName);
       if (extension.isEmpty) {
-        extension = mime.extensionFromMime(ioFile.contentType);
+        extension = mime.extensionFromMime(fileContentType);
       }
 
       if (counter == 0) {
-        fileName = basename + '.' + extension;
+        testFileName = basename + '.' + extension;
       } else {
-        fileName = '$basename ($counter).$extension';
+        testFileName = '$basename ($counter).$extension';
       }
 
-      testFile = File(saveDir + fileName);
+      final testFile = File(saveDir + testFileName);
       if (!await testFile.exists()) break;
       counter++;
     }
 
-    return testFile;
+    return testFileName;
+  }
+
+  static Future<File> emptyFile(IOFile ioFile, String saveDir) async {
+    final fileName = await emptyFileName(ioFile.name, ioFile.contentType, saveDir);
+    return File(saveDir + fileName);
   }
 
   @override
@@ -146,7 +150,7 @@ class DartIOFileSaver implements FileSaver {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = await _emptyFile(file, defaultDownloadDir);
+    final newFile = await emptyFile(file, defaultDownloadDir);
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
@@ -162,7 +166,7 @@ class DartIOFileSaver implements FileSaver {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = await _emptyFile(file, defaultDownloadDir);
+    final newFile = await emptyFile(file, defaultDownloadDir);
 
     final sink = newFile.openWrite();
 
