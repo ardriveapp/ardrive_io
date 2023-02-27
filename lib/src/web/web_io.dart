@@ -108,7 +108,7 @@ class WebIO implements ArDriveIO {
 
       final finalizeResult = await finalize.future;
       if (!finalizeResult) {
-        debugPrint('CAUTION! File not verified, removing file from disk...');
+        debugPrint('Cancelling saveFileStream...');
         await handle.remove();
       }
 
@@ -140,8 +140,9 @@ class WebIO implements ArDriveIO {
 
       final finalizeResult = await finalize.future;
       if (!finalizeResult) {
-        debugPrint('CAUTION! File not verified, removing file from disk...');
-        await writable.abortFuture('File not verified');
+        debugPrint('Cancelling saveFileStream...');
+        writer.abort();
+        await writable.abortFuture('Finalize result is false');
       } else {
         await writer.closeFuture();
         writer.releaseLock();

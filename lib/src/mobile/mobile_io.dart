@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/utils/completer.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
+import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as p;
 
@@ -198,6 +199,7 @@ class DartIOFileSaver implements FileSaver {
 
     final finalizeResult = await finalize.future;
     if (!finalizeResult) {
+      debugPrint('Cancelling saveStream...');
       await newFile.delete();
     }
 
