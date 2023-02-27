@@ -5,6 +5,7 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/utils/completer.dart';
 import 'package:ardrive_io/src/web/stream_saver.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
@@ -66,20 +67,17 @@ class WebIO implements ArDriveIO {
   }
 
   @override
-  Future<bool> saveFileStream(IOFile file, Future<bool> verified) async {
+  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize) async {
     if (FileSystemAccess.supported) {
       debugPrint('Saving using FileSystemAccess API');
-      return await _saveFileSystemAccessApi(file, verified);
+      return await _saveFileSystemAccessApi(file, finalize);
     } else {
       debugPrint('Saving using StreamSaver.js');
-      return await _saveFileStreamSaver(file, verified);
+      return await _saveFileStreamSaver(file, finalize);
     }
   }
 
-  Future<bool> _saveFileSystemAccessApi(IOFile file, Future<bool> verified) async {
-    var abort = false;
-    verified.then((ok) {if (!ok) abort = true;});
-
+  Future<bool> _saveFileSystemAccessApi(IOFile file, Completer<bool> finalize) async {
     final extension = getFileExtension(name: file.name, contentType: file.contentType);
 
     try {
@@ -101,20 +99,20 @@ class WebIO implements ArDriveIO {
       final writer =  writable.getWriter();
 
       await for (final chunk in file.openReadStream()) {
-        if (abort) break;
+        if (await completerMaybe(finalize) == false) break;
         await writer.ready;
         await writer.write(chunk);
       }
       writer.releaseLock();
       await writable.close();
 
-      final ok = await verified;
-      if (!ok) {
-        print('CAUTION! File not verified, removing file from disk...');
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('CAUTION! File not verified, removing file from disk...');
         await handle.remove();
       }
 
-      return ok;
+      return finalizeResult;
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
       throw EntityPathException();
@@ -126,10 +124,7 @@ class WebIO implements ArDriveIO {
     }
   }
 
-  Future<bool> _saveFileStreamSaver(IOFile file, Future<bool> verified) async {
-    var abort = false;
-    verified.then((ok) {if (!ok) abort = true;});
-
+  Future<bool> _saveFileStreamSaver(IOFile file, Completer<bool> finalize) async {
     try {
       final writable = createWriteStream(file.name, {
         'size': await file.length,
@@ -137,22 +132,22 @@ class WebIO implements ArDriveIO {
       final writer = writable.getWriter();
       
       await for (final chunk in file.openReadStream()) {
-        if (abort) break;
+        if (await completerMaybe(finalize) == false) break;
         await writer.readyFuture;
         await writer.writeFuture(chunk);
       }
       await writer.readyFuture;
 
-      final ok = await verified;
-      if (!ok) {
-        print('CAUTION! File not verified, removing file from disk...');
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('CAUTION! File not verified, removing file from disk...');
         await writable.abortFuture('File not verified');
       } else {
         await writer.closeFuture();
         writer.releaseLock();
       }
       
-      return ok;
+      return finalizeResult;
     } on Exception {
       return false;
     }

@@ -37,5 +37,5 @@ abstract class ArDriveIO {
 
   Future<void> saveFile(IOFile file);
 
-  Future<bool> saveFileStream(IOFile file, Future<bool> verified);
+  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize);
 }

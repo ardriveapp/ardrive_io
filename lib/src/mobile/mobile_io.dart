@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/utils/completer.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as p;
@@ -73,9 +75,9 @@ class MobileIO implements ArDriveIO {
   }
 
   @override
-  Future<bool> saveFileStream(IOFile file, Future<bool> verified) async {
+  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize) async {
     try {
-      return await _fileSaver.saveStream(file, verified);
+      return await _fileSaver.saveStream(file, finalize);
     } catch (e) {
       rethrow;
     }
@@ -103,9 +105,8 @@ class MobileSelectableFolderFileSaver implements FileSaver {
   }
   
   @override
-  Future<bool> saveStream(IOFile file, Future<bool> verified) {
+  Future<bool> saveStream(IOFile file, Completer<bool> finalize) {
     // file_saver doesn't seem to support support saving streams
-    // TODO: implement saveStream
     throw UnimplementedError();
   }
 }
@@ -164,10 +165,7 @@ class DartIOFileSaver implements FileSaver {
   }
   
   @override
-  Future<bool> saveStream(IOFile file, Future<bool> verified) async {
-    var abort = false;
-    verified.then((ok) {if (!ok) abort = true;});
-    
+  Future<bool> saveStream(IOFile file, Completer<bool> finalize) async {
     await requestPermissions();
     await verifyPermissions();
 
@@ -179,10 +177,10 @@ class DartIOFileSaver implements FileSaver {
     final sink = newFile.openWrite();
 
     // NOTE: This is an alternative to `addStream` with lower level control
-    const flushThresholdBytes = 10 * 1024 * 1024; // 10 MiB
+    const flushThresholdBytes = 50 * 1024 * 1024; // 50 MiB
     var unflushedDataBytes = 0;
     await for (final chunk in file.openReadStream()) {
-      if (abort) break;
+      if (await completerMaybe(finalize) == false) break;
 
       sink.add(chunk);
       unflushedDataBytes += chunk.length;
@@ -198,12 +196,12 @@ class DartIOFileSaver implements FileSaver {
     // await sink.flush();
     // await sink.close();
 
-    final ok = await verified;
-    if (!ok) {
+    final finalizeResult = await finalize.future;
+    if (!finalizeResult) {
       await newFile.delete();
     }
 
-    return ok;
+    return finalizeResult;
   }
 }
 
@@ -219,5 +217,5 @@ abstract class FileSaver {
 
   Future<void> save(IOFile file);
 
-  Future<bool> saveStream(IOFile file, Future<bool> verified);
+  Future<bool> saveStream(IOFile file, Completer<bool> finalize);
 }
