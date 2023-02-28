@@ -76,9 +76,9 @@ class MobileIO implements ArDriveIO {
   }
 
   @override
-  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize) async {
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) async* {
     try {
-      return await _fileSaver.saveStream(file, finalize);
+      yield* _fileSaver.saveStream(file, finalize);
     } catch (e) {
       rethrow;
     }
@@ -106,7 +106,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
   }
   
   @override
-  Future<bool> saveStream(IOFile file, Completer<bool> finalize) {
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize) {
     // file_saver doesn't seem to support support saving streams
     throw UnimplementedError();
   }
@@ -166,44 +166,69 @@ class DartIOFileSaver implements FileSaver {
   }
   
   @override
-  Future<bool> saveStream(IOFile file, Completer<bool> finalize) async {
-    await requestPermissions();
-    await verifyPermissions();
-
-    /// platform_specific_path/Downloads/
-    final defaultDownloadDir = await getDefaultMobileDownloadDir();
-
-    final newFile = await emptyFile(defaultDownloadDir, file);
-
-    final sink = newFile.openWrite();
-
-    // NOTE: This is an alternative to `addStream` with lower level control
-    const flushThresholdBytes = 50 * 1024 * 1024; // 50 MiB
-    var unflushedDataBytes = 0;
-    await for (final chunk in file.openReadStream()) {
-      if (await completerMaybe(finalize) == false) break;
-
-      sink.add(chunk);
-      unflushedDataBytes += chunk.length;
-      if (unflushedDataBytes > flushThresholdBytes) {
-        await sink.flush();
-        unflushedDataBytes = 0;
-      }
-    }
-    await sink.flush();
-    await sink.close();
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
     
-    // await sink.addStream(file.openReadStream());
-    // await sink.flush();
-    // await sink.close();
+    try {
+      await requestPermissions();
+      await verifyPermissions();
 
-    final finalizeResult = await finalize.future;
-    if (!finalizeResult) {
-      debugPrint('Cancelling saveStream...');
-      await newFile.delete();
+      /// platform_specific_path/Downloads/
+      final defaultDownloadDir = await getDefaultMobileDownloadDir();
+
+      final newFile = await emptyFile(defaultDownloadDir, file);
+
+      final sink = newFile.openWrite();
+
+      // NOTE: This is an alternative to `addStream` with lower level control
+      const flushThresholdBytes = 50 * 1024 * 1024; // 50 MiB
+      var unflushedDataBytes = 0;
+      await for (final chunk in file.openReadStream()) {
+        if (await completerMaybe(finalize) == false) break;
+
+        sink.add(chunk);
+        unflushedDataBytes += chunk.length;
+        if (unflushedDataBytes > flushThresholdBytes) {
+          await sink.flush();
+          unflushedDataBytes = 0;
+        }
+
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
+      }
+      await sink.flush();
+      await sink.close();
+      
+      // await sink.addStream(file.openReadStream());
+      // await sink.flush();
+      // await sink.close();
+
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('Cancelling saveStream...');
+        await newFile.delete();
+      }
+
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: finalizeResult,
+      );
+    } catch (e) {
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: false,
+      );
     }
-
-    return finalizeResult;
   }
 }
 
@@ -219,5 +244,5 @@ abstract class FileSaver {
 
   Future<void> save(IOFile file);
 
-  Future<bool> saveStream(IOFile file, Completer<bool> finalize);
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize);
 }

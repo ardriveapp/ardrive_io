@@ -9,6 +9,18 @@ import 'mobile/mobile_io.dart';
 import 'web/stub_web_io.dart' // Stub implementation
     if (dart.library.html) 'web/web_io.dart';
 
+class SaveStatus {
+  final int bytesSaved;
+  final int totalBytes;
+  final bool? finalizeResult;
+
+  SaveStatus({
+    required this.bytesSaved,
+    required this.totalBytes,
+    this.finalizeResult,
+  });
+}
+
 /// API for I/O operations
 ///
 /// Opens the platform specific file picker to pick files and folders, and save files using
@@ -37,5 +49,5 @@ abstract class ArDriveIO {
 
   Future<void> saveFile(IOFile file);
 
-  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize);
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize);
 }

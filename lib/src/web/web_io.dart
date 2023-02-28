@@ -67,20 +67,27 @@ class WebIO implements ArDriveIO {
   }
 
   @override
-  Future<bool> saveFileStream(IOFile file, Completer<bool> finalize) async {
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) async* {
     if (FileSystemAccess.supported) {
       debugPrint('Saving using FileSystemAccess API');
-      return await _saveFileSystemAccessApi(file, finalize);
+      yield* _saveFileSystemAccessApi(file, finalize);
     } else {
       debugPrint('Saving using StreamSaver.js');
-      return await _saveFileStreamSaver(file, finalize);
+      yield* _saveFileStreamSaver(file, finalize);
     }
   }
 
-  Future<bool> _saveFileSystemAccessApi(IOFile file, Completer<bool> finalize) async {
-    final extension = getFileExtension(name: file.name, contentType: file.contentType);
+  Stream<SaveStatus> _saveFileSystemAccessApi(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
 
     try {
+      final extension = getFileExtension(name: file.name, contentType: file.contentType);
+
       final handle = await window.showSaveFilePicker(
         suggestedName: file.name,
         excludeAcceptAllOption: true,
@@ -102,6 +109,12 @@ class WebIO implements ArDriveIO {
         if (await completerMaybe(finalize) == false) break;
         await writer.ready;
         await writer.write(chunk);
+        
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
       }
       writer.releaseLock();
       await writable.close();
@@ -112,7 +125,11 @@ class WebIO implements ArDriveIO {
         await handle.remove();
       }
 
-      return finalizeResult;
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: finalizeResult,
+      );
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
       throw EntityPathException();
@@ -120,11 +137,22 @@ class WebIO implements ArDriveIO {
       // User did not granted permission to readwrite in this file.
       throw EntityPathException();
     } on Exception {
-      return false;
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: false,
+      );
     }
   }
 
-  Future<bool> _saveFileStreamSaver(IOFile file, Completer<bool> finalize) async {
+  Stream<SaveStatus> _saveFileStreamSaver(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
+    
     try {
       final writable = createWriteStream(file.name, {
         'size': await file.length,
@@ -135,6 +163,12 @@ class WebIO implements ArDriveIO {
         if (await completerMaybe(finalize) == false) break;
         await writer.readyFuture;
         await writer.writeFuture(chunk);
+
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
       }
       await writer.readyFuture;
 
@@ -148,9 +182,17 @@ class WebIO implements ArDriveIO {
         writer.releaseLock();
       }
       
-      return finalizeResult;
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: finalizeResult,
+      );
     } on Exception {
-      return false;
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        finalizeResult: false,
+      );
     }
   }
 }
