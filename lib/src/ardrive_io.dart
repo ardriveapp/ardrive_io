@@ -12,12 +12,12 @@ import 'web/stub_web_io.dart' // Stub implementation
 class SaveStatus {
   final int bytesSaved;
   final int totalBytes;
-  final bool? finalizeResult;
+  final bool? saveResult;
 
   SaveStatus({
     required this.bytesSaved,
     required this.totalBytes,
-    this.finalizeResult,
+    this.saveResult,
   });
 }
 

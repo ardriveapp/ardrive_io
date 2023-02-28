@@ -128,7 +128,7 @@ class WebIO implements ArDriveIO {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: finalizeResult,
+        saveResult: finalizeResult,
       );
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
@@ -140,7 +140,7 @@ class WebIO implements ArDriveIO {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: false,
+        saveResult: false,
       );
     }
   }
@@ -185,13 +185,13 @@ class WebIO implements ArDriveIO {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: finalizeResult,
+        saveResult: finalizeResult,
       );
     } on Exception {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: false,
+        saveResult: false,
       );
     }
   }

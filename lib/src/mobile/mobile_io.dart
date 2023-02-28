@@ -220,13 +220,13 @@ class DartIOFileSaver implements FileSaver {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: finalizeResult,
+        saveResult: finalizeResult,
       );
     } catch (e) {
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        finalizeResult: false,
+        saveResult: false,
       );
     }
   }
