@@ -5,6 +5,7 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 
 /// Web implementation to use `ArDriveIO` API
@@ -88,20 +89,33 @@ class WebFileSystemProvider implements MultiFileProvider {
     return _ioFolderAdapter.fromIOFiles(files);
   }
 
+  Future<IOFile> _platformFileToStreamFile(PlatformFile platformFile) {
+    return _ioFileAdapter.fromReadStreamGenerator(
+      platformFile.readStream!,
+      platformFile.size,
+      name: platformFile.name,
+      lastModifiedDate: platformFile.lastModified ?? DateTime.now(),
+      contentType: lookupMimeTypeWithDefaultType(platformFile.extension ?? ''),
+    );
+  }
+
   @override
   Future<IOFile> pickFile({
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    final file = await file_selector.openFile(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+    final pickerResult = await FilePicker.platform.pickFiles(
+      allowedExtensions: allowedExtensions,
+      allowMultiple: false,
+      withReadStream: true,
+      withData: false,
+    );
 
-    if (file == null) {
+    if (pickerResult == null || pickerResult.files.length != 1) {
       throw ActionCanceledException();
     }
 
-    return _ioFileAdapter.fromWebXFile(file);
+    return _platformFileToStreamFile(pickerResult.files.first);
   }
 
   @override
@@ -109,16 +123,19 @@ class WebFileSystemProvider implements MultiFileProvider {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    final xFiles = await file_selector.openFiles(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+    final pickerResult = await FilePicker.platform.pickFiles(
+      allowedExtensions: allowedExtensions,
+      allowMultiple: true,
+      withReadStream: true,
+      withData: false,
+    );
 
-    if (xFiles.isEmpty) {
+    if (pickerResult == null || pickerResult.files.isEmpty) {
       throw ActionCanceledException();
     }
 
     return Future.wait(
-        xFiles.map((xfile) => _ioFileAdapter.fromWebXFile(xfile)).toList());
+        pickerResult.files.map(_platformFileToStreamFile).toList());
   }
 }
 
@@ -225,7 +242,33 @@ class WebFile implements IOFile {
   }
 
   @override
-  FutureOr<int> get length async => (await readAsBytes()).length;
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
+    if (_bytes != null) {
+      yield _bytes!.sublist(start, end ?? _bytes!.length);
+      return;
+    }
+
+    final reader = FileReader();
+
+    int globalOffset = start;
+    int globalEnd = end ?? _file.size;
+    while (globalOffset < globalEnd) {
+      final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
+          ? globalEnd
+          : globalOffset + readStreamChunkSize;
+
+      final blob = _file.slice(globalOffset, chunkEnd);
+      reader.readAsArrayBuffer(blob);
+      await reader.onLoad.first;
+
+      yield reader.result as Uint8List;
+
+      globalOffset += readStreamChunkSize;
+    }
+  }
+
+  @override
+  FutureOr<int> get length async => _bytes?.length ?? _file.size;
 
   @override
   String toString() {

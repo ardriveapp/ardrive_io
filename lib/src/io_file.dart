@@ -4,9 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:async/async.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+
+const readStreamChunkSize = 256 * 1024;
 
 /// Base class for agnostic platform Files.
 ///
@@ -18,6 +21,7 @@ abstract class IOFile implements IOEntity {
   FutureOr<int> get length;
   Future<Uint8List> readAsBytes();
   Future<String> readAsString();
+  Stream<Uint8List> openReadStream([int start = 0, int? end]);
 
   static final IOFileAdapter _ioFileAdapter = IOFileAdapter();
 
@@ -142,6 +146,22 @@ class IOFileAdapter {
       name: name,
     );
   }
+
+  Future<IOFile> fromReadStreamGenerator(
+    Stream<Uint8List> Function([int? s, int? e]) openReadStream,
+    int length, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async {
+    return _StreamFile(
+      openReadStream,
+      length,
+      contentType: contentType ?? lookupMimeTypeWithDefaultType(name),
+      lastModifiedDate: lastModifiedDate,
+      name: name,
+    );
+  }
 }
 
 /// An implementation class that uses `dart:io` `File`
@@ -176,6 +196,11 @@ class _IOFile implements IOFile {
   @override
   Future<String> readAsString() {
     return _file.readAsString();
+  }
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return _file.openRead(start, end).map((data) => data as Uint8List);
   }
 
   @override
@@ -222,7 +247,63 @@ class _DataFile implements IOFile {
   }
 
   @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return Stream.value(_bytes.sublist(start, end));
+  }
+
+  @override
   int get length => _bytes.length;
+
+  @override
+  String toString() {
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
+  }
+}
+
+/// `IOFile` implementation with the given `bytes`.
+class _StreamFile implements IOFile {
+  _StreamFile(
+    this._openReadStream,
+    this._length, {
+    required this.contentType,
+    required this.lastModifiedDate,
+    required this.name,
+  });
+
+  final Stream<Uint8List> Function([int? s, int? e]) _openReadStream;
+
+  final int _length;
+
+  @override
+  final String contentType;
+
+  @override
+  final DateTime lastModifiedDate;
+
+  @override
+  final String name;
+
+  /// It was generated from a BLOB stream
+  @override
+  final String path = '';
+
+  @override
+  Future<Uint8List> readAsBytes() async {
+    return collectBytes(_openReadStream());
+  }
+
+  @override
+  Future<String> readAsString() async {
+    return utf8.decode(await readAsBytes());
+  }
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    return _openReadStream(start, end);
+  }
+
+  @override
+  int get length => _length;
 
   @override
   String toString() {
@@ -261,6 +342,22 @@ class _FromXFile implements IOFile {
   @override
   Future<String> readAsString() {
     return _file.readAsString();
+  }
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
+    int globalOffset = start;
+    int globalEnd = end ?? await _file.length();
+    while (globalOffset < globalEnd) {
+      final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
+          ? globalEnd
+          : globalOffset + readStreamChunkSize;
+
+      final chunk = await collectBytes(_file.openRead(globalOffset, chunkEnd));
+      yield chunk;
+
+      globalOffset += readStreamChunkSize;
+    }
   }
 
   @override
