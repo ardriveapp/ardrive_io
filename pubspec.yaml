@@ -1,6 +1,6 @@
 name: ardrive_io
 description: A new Flutter package project.
-version: 1.0.0
+version: 1.2.0
 homepage:
 publish_to: none
 
@@ -11,7 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  file_picker: ^5.2.4
+  file_picker:
+    git: 
+      url: https://github.com/ar-io/flutter_file_picker
+      ref: master
   path_provider: ^2.0.11
   permission_handler: ^10.0.0
   mime: ^1.0.2
@@ -25,6 +28,7 @@ dependencies:
       url: https://github.com/thiagocarvalhodev/file_saver
       ref: fix-extension
   device_info_plus: ^8.0.0
+  async: ^2.9.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

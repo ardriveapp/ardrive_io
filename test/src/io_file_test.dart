@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:async/async.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
@@ -47,6 +48,7 @@ void main() {
 
       /// ensure that is the same content
       expect(await iofile.readAsBytes(), await file.readAsBytes());
+      expect(await collectBytes(iofile.openReadStream()), await file.readAsBytes());
     });
     test('should throw an exception with a file without a path', () async {
       await expectLater(() => sut.fromFilePicker(mockPlatformFileWithNullPath),
@@ -66,6 +68,7 @@ void main() {
 
       /// ensure that is the same content
       expect(await iofile.readAsBytes(), await file.readAsBytes());
+      expect(await collectBytes(iofile.openReadStream()), await file.readAsBytes());
     });
   });
   group('test class IOFileAdapter method fromData', () {
@@ -83,6 +86,7 @@ void main() {
 
       /// ensure that is the same content
       expect(bytes, await iofile.readAsBytes());
+      expect(bytes, await collectBytes(iofile.openReadStream()));
     });
   });
 
@@ -100,6 +104,7 @@ void main() {
 
       /// ensure that is the same content
       expect(await file.readAsBytes(), await iofile.readAsBytes());
+      expect(await file.readAsBytes(), await collectBytes(iofile.openReadStream()));
     });
   });
 
@@ -118,6 +123,7 @@ void main() {
 
       /// ensure that is the same content
       expect(bytes, await iofile.readAsBytes());
+      expect(bytes, await collectBytes(iofile.openReadStream()));
     });
   });
 }
