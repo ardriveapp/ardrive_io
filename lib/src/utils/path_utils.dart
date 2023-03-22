@@ -117,15 +117,15 @@ Future<String> _getDefaultAndroidDir() async {
 /// If the file already exists, it will append a number to the filename in brackets.
 /// Returns only the name of the file as a string.
 Future<String> emptyFileName(String saveDir, String fileName, String? fileContentType) async {
-  String testFileName;
+  String potentialFileName;
   int counter = 0;
   while (true) {
     final baseWithoutExt = path.basenameWithoutExtension(fileName);
 
     if (counter == 0) {
-      testFileName = baseWithoutExt;
+      potentialFileName = baseWithoutExt;
     } else {
-      testFileName = '$baseWithoutExt ($counter)';
+      potentialFileName = '$baseWithoutExt ($counter)';
     }
 
     var extension = path.extension(fileName); // includes '.'
@@ -136,16 +136,16 @@ Future<String> emptyFileName(String saveDir, String fileName, String? fileConten
     }
     
     if (extension.isNotEmpty) {
-      testFileName += '.$extension';
+      potentialFileName += '.$extension';
     }
 
-    final testFile = File(saveDir + testFileName);
+    final testFile = File(saveDir + potentialFileName);
     if (!await testFile.exists()) break;
     
     counter++;
   }
 
-  return testFileName;
+  return potentialFileName;
 }
 
 Future<File> emptyFile(String saveDir, IOFile ioFile) async {
