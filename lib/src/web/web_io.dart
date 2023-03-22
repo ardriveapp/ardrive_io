@@ -132,10 +132,10 @@ class WebIO implements ArDriveIO {
       );
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
-      throw EntityPathException();
+      throw ActionCanceledException();
     } on NotAllowedError {
       // User did not granted permission to readwrite in this file.
-      throw EntityPathException();
+      throw FileReadWritePermissionDeniedException();
     } on Exception {
       yield SaveStatus(
         bytesSaved: bytesSaved,
