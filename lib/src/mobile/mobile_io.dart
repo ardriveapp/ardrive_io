@@ -207,10 +207,6 @@ class DartIOFileSaver implements FileSaver {
       await sink.flush();
       await sink.close();
       
-      // await sink.addStream(file.openReadStream());
-      // await sink.flush();
-      // await sink.close();
-
       final finalizeResult = await finalize.future;
       if (!finalizeResult) {
         debugPrint('Cancelling saveStream...');
