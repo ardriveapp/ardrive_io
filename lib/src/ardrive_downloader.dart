@@ -26,7 +26,7 @@ class ArDriveDownloader {
     await verifyPermissions();
 
     final downloadDir = await getDefaultMobileDownloadDir();
-    final saveFileName = await DartIOFileSaver().emptyFileName(downloadDir, fileName, contentType);
+    final saveFileName = await emptyFileName(downloadDir, fileName, contentType);
 
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,

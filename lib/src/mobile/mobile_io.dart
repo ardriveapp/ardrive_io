@@ -115,43 +115,6 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 /// Saves a file using the `dart:io` library.
 /// It will save on `getDefaultMobileDownloadDir()`
 class DartIOFileSaver implements FileSaver {
-  Future<String> emptyFileName(String saveDir, String fileName, String? fileContentType) async {
-    String testFileName;
-    int counter = 0;
-    while (true) {
-      final baseWithoutExt = p.basenameWithoutExtension(fileName);
-
-      if (counter == 0) {
-        testFileName = baseWithoutExt;
-      } else {
-        testFileName = '$baseWithoutExt ($counter)';
-      }
-
-      var extension = p.extension(fileName); // includes '.'
-      if (extension.isNotEmpty) {
-        extension = extension.substring(1);
-      } else {
-        extension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
-      }
-      
-      if (extension.isNotEmpty) {
-        testFileName += '.$extension';
-      }
-
-      final testFile = File(saveDir + testFileName);
-      if (!await testFile.exists()) break;
-      
-      counter++;
-    }
-
-    return testFileName;
-  }
-
-  Future<File> emptyFile(String saveDir, IOFile ioFile) async {
-    final fileName = await emptyFileName(saveDir, ioFile.name, ioFile.contentType);
-    return File(saveDir + fileName);
-  }
-
   @override
   Future<void> save(IOFile file) async {
     await requestPermissions();

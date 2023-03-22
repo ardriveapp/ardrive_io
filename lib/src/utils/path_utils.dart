@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as path;
@@ -110,4 +111,44 @@ Future<String> _getDefaultAndroidDir() async {
       return directory.path;
     }
   }
+}
+
+/// Searches for an empty filename in the given [saveDir] and returns it.
+/// If the file already exists, it will append a number to the filename in brackets.
+/// Returns only the name of the file as a string.
+Future<String> emptyFileName(String saveDir, String fileName, String? fileContentType) async {
+  String testFileName;
+  int counter = 0;
+  while (true) {
+    final baseWithoutExt = path.basenameWithoutExtension(fileName);
+
+    if (counter == 0) {
+      testFileName = baseWithoutExt;
+    } else {
+      testFileName = '$baseWithoutExt ($counter)';
+    }
+
+    var extension = path.extension(fileName); // includes '.'
+    if (extension.isNotEmpty) {
+      extension = extension.substring(1);
+    } else {
+      extension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
+    }
+    
+    if (extension.isNotEmpty) {
+      testFileName += '.$extension';
+    }
+
+    final testFile = File(saveDir + testFileName);
+    if (!await testFile.exists()) break;
+    
+    counter++;
+  }
+
+  return testFileName;
+}
+
+Future<File> emptyFile(String saveDir, IOFile ioFile) async {
+  final fileName = await emptyFileName(saveDir, ioFile.name, ioFile.contentType);
+  return File(saveDir + fileName);
 }
