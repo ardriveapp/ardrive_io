@@ -119,7 +119,8 @@ Future<String> _getDefaultAndroidDir() async {
 Future<String> nonexistentFileName(String saveDir, String fileName, String? fileContentType) async {
   String potentialFileName;
   int counter = 0;
-  while (true) {
+  File testFile;
+  do {
     final baseWithoutExt = path.basenameWithoutExtension(fileName);
 
     if (counter == 0) {
@@ -139,11 +140,10 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
       potentialFileName += '.$fileExtension';
     }
 
-    final testFile = File(saveDir + potentialFileName);
-    if (!await testFile.exists()) break;
+    testFile = File(saveDir + potentialFileName);
     
     counter++;
-  }
+  } while (await testFile.exists());
 
   return potentialFileName;
 }
