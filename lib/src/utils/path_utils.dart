@@ -143,6 +143,8 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
     testFile = File(saveDir + potentialFileName);
     
     counter++;
+
+    // TODO: Throw an exception on arbitrarily large counter?
   } while (await testFile.exists());
 
   return potentialFileName;
