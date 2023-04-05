@@ -113,10 +113,10 @@ Future<String> _getDefaultAndroidDir() async {
   }
 }
 
-/// Searches for an empty filename in the given [saveDir] and returns it.
+/// Searches for a nonexistent filename in the given [saveDir] and returns it.
 /// If the file already exists, it will append a number to the filename in brackets.
 /// Returns only the name of the file as a string.
-Future<String> emptyFileName(String saveDir, String fileName, String? fileContentType) async {
+Future<String> nonexistentFileName(String saveDir, String fileName, String? fileContentType) async {
   String potentialFileName;
   int counter = 0;
   while (true) {
@@ -148,7 +148,7 @@ Future<String> emptyFileName(String saveDir, String fileName, String? fileConten
   return potentialFileName;
 }
 
-Future<File> emptyFile(String saveDir, IOFile ioFile) async {
-  final fileName = await emptyFileName(saveDir, ioFile.name, ioFile.contentType);
+Future<File> nonexistentFile(String saveDir, IOFile ioFile) async {
+  final fileName = await nonexistentFileName(saveDir, ioFile.name, ioFile.contentType);
   return File(saveDir + fileName);
 }

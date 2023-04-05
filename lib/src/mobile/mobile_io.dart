@@ -123,7 +123,7 @@ class DartIOFileSaver implements FileSaver {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = await emptyFile(defaultDownloadDir, file);
+    final newFile = await nonexistentFile(defaultDownloadDir, file);
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
@@ -144,7 +144,7 @@ class DartIOFileSaver implements FileSaver {
       /// platform_specific_path/Downloads/
       final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-      final newFile = await emptyFile(defaultDownloadDir, file);
+      final newFile = await nonexistentFile(defaultDownloadDir, file);
 
       final sink = newFile.openWrite();
 
