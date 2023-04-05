@@ -132,8 +132,13 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
     var fileExtension = path.extension(fileName); // includes '.'
     if (fileExtension.isNotEmpty) {
       fileExtension = fileExtension.substring(1);
-    } else {
-      fileExtension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
+    } else if (fileContentType != null) {
+      // For some reason `extensionFromMime` returns the input if it can't find an extension.
+      // We only want to use the result if it is an actual extension.
+      final fileExtensionOrMime = mime.extensionFromMime(fileContentType); // excludes '.'
+      if (fileExtensionOrMime != fileContentType) {
+        fileExtension = fileExtensionOrMime;
+      }
     }
     
     if (fileExtension.isNotEmpty) {
