@@ -128,15 +128,15 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
       potentialFileName = '$baseWithoutExt ($counter)';
     }
 
-    var extension = path.extension(fileName); // includes '.'
-    if (extension.isNotEmpty) {
-      extension = extension.substring(1);
+    var fileExtension = path.extension(fileName); // includes '.'
+    if (fileExtension.isNotEmpty) {
+      fileExtension = fileExtension.substring(1);
     } else {
-      extension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
+      fileExtension = mime.extensionFromMime(fileContentType ?? ''); // excludes '.'
     }
     
-    if (extension.isNotEmpty) {
-      potentialFileName += '.$extension';
+    if (fileExtension.isNotEmpty) {
+      potentialFileName += '.$fileExtension';
     }
 
     final testFile = File(saveDir + potentialFileName);
