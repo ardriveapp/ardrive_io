@@ -12,11 +12,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.3.9"
-          channel: "stable"
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Download dependencies
         run: flutter clean && flutter pub get
