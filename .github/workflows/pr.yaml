@@ -2,24 +2,9 @@ name: "PR build and test"
 
 on:
   pull_request:
+    branches-ignore:
+      - main
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.3.9"
-          channel: "stable"
-
-      - name: Download dependencies
-        run: flutter clean && flutter pub get
-
-      - name: Test package
-        run: flutter test
+    uses: ./.github/workflows/test.yml
