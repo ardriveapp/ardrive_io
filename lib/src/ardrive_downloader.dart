@@ -56,14 +56,13 @@ class ArDriveDownloader {
         _port.sendPort, 'downloader_send_port');
 
     _port.listen((dynamic data) {
-      DownloadTaskStatus status = data[1];
-      debugPrint('Donwload $taskId status: ' + status.toString());
+      DownloadTaskStatus status = DownloadTaskStatus(data[1]);
+      int progress = data[2];
 
       /// only track the progress of current task id
       if (status == DownloadTaskStatus.enqueued) {
         controller.sink.add(0);
       } else if (status == DownloadTaskStatus.running) {
-        int progress = data[2];
         debugPrint('Download progress: ' + progress.toString());
         controller.sink.add(progress);
       } else if (status == DownloadTaskStatus.complete) {
