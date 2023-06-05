@@ -76,7 +76,7 @@ Future<bool> shouldSkipStoragePermissionCheck() async {
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     final AndroidDeviceInfo deviceInfo = await deviceInfoPlugin.androidInfo;
 
-    return (deviceInfo.version.sdkInt ?? 0) >= 33;
+    return (deviceInfo.version.sdkInt) >= 33;
   }
 
   return false;
