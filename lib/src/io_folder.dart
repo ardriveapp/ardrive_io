@@ -116,17 +116,18 @@ class _FileSystemFolder extends IOFolder {
 }
 
 class _WebFolder extends IOFolder {
-  _WebFolder(
-    List<IOFile> files,
-  ) : _files = files;
+  _WebFolder(List<MutableIOFilePath> files, this.name) : _files = files {
+    _initChildren();
+  }
+  final List<MutableIOFilePath> _files;
+  final Map<String, IOEntity> _children = {};
+
   @override
   final DateTime lastModifiedDate = DateTime.now();
 
-  final List<IOFile> _files;
-
   @override
   Future<List<IOEntity>> listContent() {
-    return Future.value(_files);
+    return Future.value(_children.values.toList());
   }
 
   @override
@@ -140,13 +141,46 @@ class _WebFolder extends IOFolder {
   }
 
   @override
-  final String name = '';
+  final String name;
 
   @override
   final String path = '';
 
   @override
   List<Object?> get props => [name, path];
+
+  void _initChildren() {
+    final Set<String> processedFolders = {};
+
+    // Add immediate files first
+    for (var file in _files) {
+      final segments = file.logicalPath.split('/');
+      if (segments.length == 1) {
+        _children[segments.first] = file;
+      }
+    }
+
+    // Add immediate folders next
+    for (var file in _files) {
+      final segments = file.logicalPath.split('/');
+      if (segments.length > 1) {
+        final immediateFolderName = segments.first;
+        if (!processedFolders.contains(immediateFolderName)) {
+          processedFolders.add(immediateFolderName);
+          List<MutableIOFilePath> immediateChildFiles = _files
+              .where(
+                  (f) => f.logicalPath.split('/').first == immediateFolderName)
+              .map((f) {
+            f.logicalPath =
+                f.logicalPath.substring("$immediateFolderName/".length);
+            return f;
+          }).toList();
+          _children[immediateFolderName] =
+              _WebFolder(immediateChildFiles, immediateFolderName);
+        }
+      }
+    }
+  }
 }
 
 /// Adapts the `IOFolder` from different I/O sources
@@ -174,9 +208,10 @@ class IOFolderAdapter {
     return folder;
   }
 
-  IOFolder fromIOFiles(List<IOFile> files) {
+  IOFolder fromIOFiles(List<MutableIOFilePath> files) {
     return _WebFolder(
       files,
+      files.first.logicalPath.split('/').first,
     );
   }
 }

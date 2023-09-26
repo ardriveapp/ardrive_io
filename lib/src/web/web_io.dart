@@ -50,7 +50,7 @@ class WebIO implements ArDriveIO {
   @override
   Future<void> saveFile(IOFile file) async {
     final savePath = await file_selector.getSaveLocation();
-    
+
     if (savePath == null) {
       throw EntityPathException();
     }
@@ -77,9 +77,9 @@ class WebFileSystemProvider implements MultiFileProvider {
 
   @override
   Future<IOFolder> getFolder() async {
-    final files = <IOFile>[];
+    final files = <MutableIOFilePath>[];
 
-    late Stream<List<IOFile>> folderStream;
+    late Stream<List<MutableIOFilePath>> folderStream;
 
     _folderPicker.pickFolderFiles((stream) => folderStream = stream);
 
@@ -144,9 +144,9 @@ class WebFileSystemProvider implements MultiFileProvider {
 /// When the file picker window is closed it will return a list of `IOFile`
 class FolderPicker {
   Future<void> pickFolderFiles(
-      Function(Stream<List<IOFile>> stream) getFiles) async {
-    StreamController<List<IOFile>> _folderController =
-        StreamController<List<IOFile>>();
+      Function(Stream<List<MutableIOFilePath>> stream) getFiles) async {
+    StreamController<List<MutableIOFilePath>> _folderController =
+        StreamController<List<MutableIOFilePath>>();
 
     /// Set the stream to get the files
     getFiles(_folderController.stream);
@@ -191,22 +191,25 @@ class FolderPicker {
       lastModifiedDate = DateTime.now();
     }
 
-    return WebFile(e,
-        name: e.name,
-        lastModifiedDate: lastModifiedDate,
-        path: path,
-        contentType: lookupMimeTypeWithDefaultType(path));
+    return WebFile(
+      e,
+      name: e.name,
+      lastModifiedDate: lastModifiedDate,
+      path: path,
+      contentType: lookupMimeTypeWithDefaultType(path),
+    );
   }
 }
 
-class WebFile implements IOFile {
+class WebFile implements MutableIOFilePath {
   WebFile(
     File file, {
     required this.name,
     required this.lastModifiedDate,
     required this.path,
     required this.contentType,
-  }) : _file = file;
+  })  : logicalPath = path,
+        _file = file;
 
   final File _file;
 
@@ -275,4 +278,7 @@ class WebFile implements IOFile {
   String toString() {
     return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
+
+  @override
+  String logicalPath;
 }
