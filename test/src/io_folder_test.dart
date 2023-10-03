@@ -147,10 +147,10 @@ void main() {
 }
 
 class _TestFile extends MutableIOFilePath {
-  _TestFile(this.logicalPath);
+  _TestFile(this.mutablePath);
 
   @override
-  String logicalPath = '';
+  String mutablePath = '';
 
   @override
   // TODO: implement contentType

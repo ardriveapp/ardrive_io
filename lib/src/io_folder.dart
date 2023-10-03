@@ -154,7 +154,7 @@ class _WebFolder extends IOFolder {
 
     // Add immediate files first
     for (var file in _files) {
-      final segments = file.logicalPath.split('/');
+      final segments = file.mutablePath.split('/');
       if (segments.length == 1) {
         _children[segments.first] = file;
       }
@@ -162,17 +162,17 @@ class _WebFolder extends IOFolder {
 
     // Add immediate folders next
     for (var file in _files) {
-      final segments = file.logicalPath.split('/');
+      final segments = file.mutablePath.split('/');
       if (segments.length > 1) {
         final immediateFolderName = segments.first;
         if (!processedFolders.contains(immediateFolderName)) {
           processedFolders.add(immediateFolderName);
           List<MutableIOFilePath> immediateChildFiles = _files
               .where(
-                  (f) => f.logicalPath.split('/').first == immediateFolderName)
+                  (f) => f.mutablePath.split('/').first == immediateFolderName)
               .map((f) {
-            f.logicalPath =
-                f.logicalPath.substring("$immediateFolderName/".length);
+            f.mutablePath =
+                f.mutablePath.substring("$immediateFolderName/".length);
             return f;
           }).toList();
           _children[immediateFolderName] =
@@ -208,10 +208,14 @@ class IOFolderAdapter {
     return folder;
   }
 
-  IOFolder fromIOFiles(List<MutableIOFilePath> files) {
+  IOFolder fromIOFiles(List<MutableIOFilePath> files,
+      {bool useVirtualPath = true}) {
+    final path = useVirtualPath
+        ? files.first.mutablePath.split('/').first
+        : files.first.path.split('/').first;
     return _WebFolder(
       files,
-      files.first.logicalPath.split('/').first,
+      path,
     );
   }
 }
