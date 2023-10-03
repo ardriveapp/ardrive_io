@@ -87,6 +87,8 @@ void main() {
     test(
         'fromFileSystemDirectory method should return the folder hierachy correctly',
         () async {
+      // TODO: implement test
+      // ignore: unused_local_variable
       final files = [
         _TestFile('first-level/file.xpto'),
         _TestFile('first-level/subdirectory-level/subdirectory-file'),
@@ -95,11 +97,6 @@ void main() {
         _TestFile(
             'first-level/subdirectory-level/subdirectory-level2/subdirectory-file-3.xpto'),
       ];
-      final firstLevelFolder = IOFolderAdapter().fromIOFiles(files);
-
-      final firstLevelContent = await firstLevelFolder.listContent();
-
-      // TODO: implement test
 
       // await sut.fromFileSystemDirectory(firstLevelDirectory);
 
