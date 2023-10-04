@@ -46,24 +46,24 @@ class ArDriveDownloader {
   }
 
   Stream<int> _handleProgress(String taskId) {
-    ReceivePort _port = ReceivePort();
+    ReceivePort port = ReceivePort();
     StreamController<int> controller = StreamController<int>();
 
     /// Remove previous port and track only one download
     IsolateNameServer.removePortNameMapping('downloader_send_port');
 
     IsolateNameServer.registerPortWithName(
-        _port.sendPort, 'downloader_send_port');
+        port.sendPort, 'downloader_send_port');
 
-    _port.listen((dynamic data) {
-      DownloadTaskStatus status = DownloadTaskStatus(data[1]);
+    port.listen((dynamic data) {
+      DownloadTaskStatus status = DownloadTaskStatus.values[data[1]];
       int progress = data[2];
 
       /// only track the progress of current task id
       if (status == DownloadTaskStatus.enqueued) {
         controller.sink.add(0);
       } else if (status == DownloadTaskStatus.running) {
-        debugPrint('Download progress: ' + progress.toString());
+        debugPrint('Download progress: $progress');
         controller.sink.add(progress);
       } else if (status == DownloadTaskStatus.complete) {
         controller.sink.add(100);

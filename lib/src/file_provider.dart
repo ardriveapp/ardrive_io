@@ -28,7 +28,8 @@ abstract class FolderProvider {
 }
 
 /// Provides multiple `IOFiles` or an `IOFolder`
-abstract class MultiFileProvider extends FileProvider with FolderProvider {
+abstract class MultiFileProvider extends FileProvider
+    implements FolderProvider {
   Future<List<IOFile>> pickMultipleFiles({
     List<String>? allowedExtensions,
     required FileSource fileSource,
