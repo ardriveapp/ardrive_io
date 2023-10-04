@@ -77,9 +77,9 @@ class WebFileSystemProvider implements MultiFileProvider {
 
   @override
   Future<IOFolder> getFolder() async {
-    final files = <MutableIOFilePath>[];
+    final files = <IOFile>[];
 
-    late Stream<List<MutableIOFilePath>> folderStream;
+    late Stream<List<IOFile>> folderStream;
 
     _folderPicker.pickFolderFiles((stream) => folderStream = stream);
 
@@ -144,9 +144,9 @@ class WebFileSystemProvider implements MultiFileProvider {
 /// When the file picker window is closed it will return a list of `IOFile`
 class FolderPicker {
   Future<void> pickFolderFiles(
-      Function(Stream<List<MutableIOFilePath>> stream) getFiles) async {
-    StreamController<List<MutableIOFilePath>> _folderController =
-        StreamController<List<MutableIOFilePath>>();
+      Function(Stream<List<IOFile>> stream) getFiles) async {
+    StreamController<List<IOFile>> _folderController =
+        StreamController<List<IOFile>>();
 
     /// Set the stream to get the files
     getFiles(_folderController.stream);
@@ -191,25 +191,22 @@ class FolderPicker {
       lastModifiedDate = DateTime.now();
     }
 
-    return WebFile(
-      e,
-      name: e.name,
-      lastModifiedDate: lastModifiedDate,
-      path: path,
-      contentType: lookupMimeTypeWithDefaultType(path),
-    );
+    return WebFile(e,
+        name: e.name,
+        lastModifiedDate: lastModifiedDate,
+        path: path,
+        contentType: lookupMimeTypeWithDefaultType(path));
   }
 }
 
-class WebFile implements MutableIOFilePath {
+class WebFile implements IOFile {
   WebFile(
     File file, {
     required this.name,
     required this.lastModifiedDate,
     required this.path,
     required this.contentType,
-  })  : virtualPath = path,
-        _file = file;
+  }) : _file = file;
 
   final File _file;
 
@@ -278,7 +275,4 @@ class WebFile implements MutableIOFilePath {
   String toString() {
     return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
-
-  @override
-  String virtualPath;
 }

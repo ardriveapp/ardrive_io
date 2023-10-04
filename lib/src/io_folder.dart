@@ -95,28 +95,38 @@ class _FileSystemFolder extends IOFolder {
     return ioFile;
   }
 
+  /// recursively get all entities from this folder filtering by the `IOEntity` `T` type
+  Future<List<T>> _getAllEntitiesFromType<T extends IOEntity>(
+      IOFolder ioFolder) async {
+    final content = await ioFolder.listContent();
+    final subFolders = content.whereType<IOFolder>();
+    final entities = <T>[];
+
+    for (IOFolder iof in subFolders) {
+      entities.addAll(await _getAllEntitiesFromType(iof));
+    }
+
+    entities.addAll(content.whereType<T>());
+
+    return entities;
+  }
+
   @override
   List<Object?> get props => [name, path];
 }
 
 class _WebFolder extends IOFolder {
   _WebFolder(
-    List<MutableIOFilePath> files,
-    this.name, {
-    String? path,
-  })  : path = path ?? name,
-        _files = files {
-    _initChildren();
-  }
-  final List<MutableIOFilePath> _files;
-  final Map<String, IOEntity> _children = {};
-
+    List<IOFile> files,
+  ) : _files = files;
   @override
   final DateTime lastModifiedDate = DateTime.now();
 
+  final List<IOFile> _files;
+
   @override
   Future<List<IOEntity>> listContent() {
-    return Future.value(_children.values.toList());
+    return Future.value(_files);
   }
 
   @override
@@ -126,69 +136,17 @@ class _WebFolder extends IOFolder {
 
   @override
   Future<List<IOFolder>> listSubfolders() {
-    return _getAllEntitiesFromType<IOFolder>(this);
+    throw UnimplementedError('IOFolder doesnt support list subfolders on Web');
   }
 
   @override
-  final String name;
+  final String name = '';
 
   @override
-  final String path;
+  final String path = '';
 
   @override
   List<Object?> get props => [name, path];
-
-  void _initChildren() {
-    final Set<String> processedFolders = {};
-
-    // Add immediate files first
-    for (var file in _files) {
-      final segments = file.virtualPath.split('/');
-      if (segments.length == 1) {
-        _children[segments.first] = file;
-      }
-    }
-
-    // Add immediate folders next
-    for (var file in _files) {
-      final segments = file.virtualPath.split('/');
-      if (segments.length > 1) {
-        final immediateFolderName = segments.first;
-        if (!processedFolders.contains(immediateFolderName)) {
-          processedFolders.add(immediateFolderName);
-          List<MutableIOFilePath> immediateChildFiles = _files
-              .where(
-                  (f) => f.virtualPath.split('/').first == immediateFolderName)
-              .map((f) {
-            f.virtualPath =
-                f.virtualPath.substring("$immediateFolderName/".length);
-            return f;
-          }).toList();
-          _children[immediateFolderName] = _WebFolder(
-            immediateChildFiles,
-            immediateFolderName,
-            path: file.path.split(file.name).first,
-          );
-        }
-      }
-    }
-  }
-}
-
-/// recursively get all entities from this folder filtering by the `IOEntity` `T` type
-Future<List<T>> _getAllEntitiesFromType<T extends IOEntity>(
-    IOFolder ioFolder) async {
-  final content = await ioFolder.listContent();
-  final subFolders = content.whereType<IOFolder>();
-  final entities = <T>[];
-
-  for (IOFolder iof in subFolders) {
-    entities.addAll(await _getAllEntitiesFromType(iof));
-  }
-
-  entities.addAll(content.whereType<T>());
-
-  return entities;
 }
 
 /// Adapts the `IOFolder` from different I/O sources
@@ -216,19 +174,9 @@ class IOFolderAdapter {
     return folder;
   }
 
-  IOFolder fromIOFiles(List<MutableIOFilePath> files,
-      {bool useVirtualPath = true}) {
-    final path = useVirtualPath
-        ? files.first.virtualPath.split('/').first
-        : files.first.path.split('/').first;
+  IOFolder fromIOFiles(List<IOFile> files) {
     return _WebFolder(
       files,
-      path.split('/').first,
-      // it uses the very first file path as the root path as all files inside the
-      // folder should be in the same path.
-      // Even if the first file is in a subfolder it will return the correct behavior.
-      // e.g.: folder/subfolder1/file2.txt -> returns /folder
-      path: path,
     );
   }
 }
