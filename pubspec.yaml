@@ -29,6 +29,7 @@ dependencies:
       ref: fix-extension
   device_info_plus: ^9.0.3
   async: ^2.9.0
+  path: ^1.8.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

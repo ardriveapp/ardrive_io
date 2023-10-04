@@ -51,7 +51,7 @@ Future<String> getDefaultMobileDownloadDir() async {
 Future<String> getDefaultAppDir() {
   return path_provider
       .getApplicationDocumentsDirectory()
-      .then((value) => value.path + '/');
+      .then((value) => '${value.path}/');
 }
 
 /// Returns the file extension from the file `name`, when having, in other case the extension
@@ -90,7 +90,7 @@ String getFileExtension({
 
 Future<String> _getDefaultIOSDir() async {
   final iosDirectory = await path_provider.getApplicationDocumentsDirectory();
-  final iosDownloadsDirectory = Directory(iosDirectory.path + '/Downloads/');
+  final iosDownloadsDirectory = Directory('${iosDirectory.path}/Downloads/');
 
   if (!iosDownloadsDirectory.existsSync()) {
     iosDownloadsDirectory.createSync();

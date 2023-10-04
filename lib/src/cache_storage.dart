@@ -10,11 +10,11 @@ class IOCacheStorage {
 
     debugPrint('saving file on local storage');
 
-    final _file = File('${cacheDir.path}/${entity.name}');
+    final file = File('${cacheDir.path}/${entity.name}');
 
     final readStream = File(entity.path).openRead();
 
-    final writeStream = await _file.open(mode: FileMode.write);
+    final writeStream = await file.open(mode: FileMode.write);
 
     await for (List<int> chunk in readStream) {
       await writeStream.writeFrom(chunk);
@@ -22,7 +22,7 @@ class IOCacheStorage {
 
     await writeStream.close();
 
-    return _file.path;
+    return file.path;
   }
 
   Future<IOFile> getFileFromStorage(String fileName) async {
@@ -32,9 +32,9 @@ class IOCacheStorage {
 
     final cacheDir = await _getCacheDir();
 
-    final _file = File('${cacheDir.path}/$fileName');
+    final file = File('${cacheDir.path}/$fileName');
 
-    return adapter.fromFile(_file);
+    return adapter.fromFile(file);
   }
 
   Future<void> freeLocalStorage() async {

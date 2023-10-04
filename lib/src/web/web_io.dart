@@ -145,11 +145,11 @@ class WebFileSystemProvider implements MultiFileProvider {
 class FolderPicker {
   Future<void> pickFolderFiles(
       Function(Stream<List<IOFile>> stream) getFiles) async {
-    StreamController<List<IOFile>> _folderController =
+    StreamController<List<IOFile>> folderController =
         StreamController<List<IOFile>>();
 
     /// Set the stream to get the files
-    getFiles(_folderController.stream);
+    getFiles(folderController.stream);
 
     final folderInput = FileUploadInputElement();
 
@@ -167,10 +167,10 @@ class FolderPicker {
 
       /// To avoid the `IOFileAdapter` imports dart:html, this file will be mounted
       /// here.
-      _folderController.add(files.map((e) => _mountFile(e)).toList());
+      folderController.add(files.map((e) => _mountFile(e)).toList());
 
       /// Closes to finish the stream with all files
-      _folderController.close();
+      folderController.close();
       folderInput.removeAttribute('webkitdirectory');
       folderInput.remove();
     });
