@@ -40,8 +40,9 @@ abstract class IOFile implements IOEntity {
 }
 
 /// A mutable version of `IOFile` that can be used to change the file's path.
+/// The `mutablePath` is not the same as `path`, which the latter is given by the system.
 abstract class MutableIOFilePath implements IOFile {
-  abstract String mutablePath;
+  abstract String virtualPath;
 }
 
 /// Adapts the `IOFile` from different I/O sources.

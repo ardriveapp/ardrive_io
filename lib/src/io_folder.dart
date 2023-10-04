@@ -70,13 +70,13 @@ class _FileSystemFolder extends IOFolder {
   /// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
   /// the current level entities loading only `IOFile` and `IOFolder`
   Future<List<IOEntity>> _mountFolderStructure() async {
-    List<IOEntity> _children = [];
+    List<IOEntity> children = [];
 
     for (var fs in _folderContent) {
-      _children.add(await _addFolderNode(fs));
+      children.add(await _addFolderNode(fs));
     }
 
-    return _children;
+    return children;
   }
 
   Future<IOEntity> _addFolderNode(FileSystemEntity fsEntity) async {
@@ -95,28 +95,17 @@ class _FileSystemFolder extends IOFolder {
     return ioFile;
   }
 
-  /// recursively get all entities from this folder filtering by the `IOEntity` `T` type
-  Future<List<T>> _getAllEntitiesFromType<T extends IOEntity>(
-      IOFolder ioFolder) async {
-    final content = await ioFolder.listContent();
-    final subFolders = content.whereType<IOFolder>();
-    final entities = <T>[];
-
-    for (IOFolder iof in subFolders) {
-      entities.addAll(await _getAllEntitiesFromType(iof));
-    }
-
-    entities.addAll(content.whereType<T>());
-
-    return entities;
-  }
-
   @override
   List<Object?> get props => [name, path];
 }
 
 class _WebFolder extends IOFolder {
-  _WebFolder(List<MutableIOFilePath> files, this.name) : _files = files {
+  _WebFolder(
+    List<MutableIOFilePath> files,
+    this.name, {
+    String? path,
+  })  : path = path ?? name,
+        _files = files {
     _initChildren();
   }
   final List<MutableIOFilePath> _files;
@@ -137,14 +126,14 @@ class _WebFolder extends IOFolder {
 
   @override
   Future<List<IOFolder>> listSubfolders() {
-    throw UnimplementedError('IOFolder doesnt support list subfolders on Web');
+    return _getAllEntitiesFromType<IOFolder>(this);
   }
 
   @override
   final String name;
 
   @override
-  final String path = '';
+  final String path;
 
   @override
   List<Object?> get props => [name, path];
@@ -154,7 +143,7 @@ class _WebFolder extends IOFolder {
 
     // Add immediate files first
     for (var file in _files) {
-      final segments = file.mutablePath.split('/');
+      final segments = file.virtualPath.split('/');
       if (segments.length == 1) {
         _children[segments.first] = file;
       }
@@ -162,25 +151,44 @@ class _WebFolder extends IOFolder {
 
     // Add immediate folders next
     for (var file in _files) {
-      final segments = file.mutablePath.split('/');
+      final segments = file.virtualPath.split('/');
       if (segments.length > 1) {
         final immediateFolderName = segments.first;
         if (!processedFolders.contains(immediateFolderName)) {
           processedFolders.add(immediateFolderName);
           List<MutableIOFilePath> immediateChildFiles = _files
               .where(
-                  (f) => f.mutablePath.split('/').first == immediateFolderName)
+                  (f) => f.virtualPath.split('/').first == immediateFolderName)
               .map((f) {
-            f.mutablePath =
-                f.mutablePath.substring("$immediateFolderName/".length);
+            f.virtualPath =
+                f.virtualPath.substring("$immediateFolderName/".length);
             return f;
           }).toList();
-          _children[immediateFolderName] =
-              _WebFolder(immediateChildFiles, immediateFolderName);
+          _children[immediateFolderName] = _WebFolder(
+            immediateChildFiles,
+            immediateFolderName,
+            path: file.path.split(file.name).first,
+          );
         }
       }
     }
   }
+}
+
+/// recursively get all entities from this folder filtering by the `IOEntity` `T` type
+Future<List<T>> _getAllEntitiesFromType<T extends IOEntity>(
+    IOFolder ioFolder) async {
+  final content = await ioFolder.listContent();
+  final subFolders = content.whereType<IOFolder>();
+  final entities = <T>[];
+
+  for (IOFolder iof in subFolders) {
+    entities.addAll(await _getAllEntitiesFromType(iof));
+  }
+
+  entities.addAll(content.whereType<T>());
+
+  return entities;
 }
 
 /// Adapts the `IOFolder` from different I/O sources
@@ -211,11 +219,16 @@ class IOFolderAdapter {
   IOFolder fromIOFiles(List<MutableIOFilePath> files,
       {bool useVirtualPath = true}) {
     final path = useVirtualPath
-        ? files.first.mutablePath.split('/').first
+        ? files.first.virtualPath.split('/').first
         : files.first.path.split('/').first;
     return _WebFolder(
       files,
-      path,
+      path.split('/').first,
+      // it uses the very first file path as the root path as all files inside the
+      // folder should be in the same path.
+      // Even if the first file is in a subfolder it will return the correct behavior.
+      // e.g.: folder/subfolder1/file2.txt -> returns /folder
+      path: path,
     );
   }
 }

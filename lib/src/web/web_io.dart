@@ -208,7 +208,7 @@ class WebFile implements MutableIOFilePath {
     required this.lastModifiedDate,
     required this.path,
     required this.contentType,
-  })  : mutablePath = path,
+  })  : virtualPath = path,
         _file = file;
 
   final File _file;
@@ -280,5 +280,5 @@ class WebFile implements MutableIOFilePath {
   }
 
   @override
-  String mutablePath;
+  String virtualPath;
 }
