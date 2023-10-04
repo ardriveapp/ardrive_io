@@ -48,6 +48,12 @@ Future<String> getDefaultMobileDownloadDir() async {
   }
 }
 
+Future<String> getDefaultAppDir() {
+  return path_provider
+      .getApplicationDocumentsDirectory()
+      .then((value) => value.path + '/');
+}
+
 /// Returns the file extension from the file `name`, when having, in other case the extension
 /// will be provided by the `contentType`.
 ///

@@ -49,7 +49,8 @@ class WebIO implements ArDriveIO {
 
   @override
   Future<void> saveFile(IOFile file) async {
-    final savePath = await file_selector.getSavePath();
+    final savePath = await file_selector.getSaveLocation();
+    
     if (savePath == null) {
       throw EntityPathException();
     }
@@ -59,7 +60,7 @@ class WebIO implements ArDriveIO {
       lastModified: file.lastModifiedDate,
       mimeType: file.contentType,
       name: file.name,
-    ).saveTo(savePath);
+    ).saveTo(savePath.path);
   }
 }
 

@@ -64,9 +64,9 @@ class MobileIO implements ArDriveIO {
   }
 
   @override
-  Future<void> saveFile(IOFile file) async {
+  Future<void> saveFile(IOFile file, [bool saveOnAppDirectory = false]) async {
     try {
-      await _fileSaver.save(file);
+      await _fileSaver.save(file, saveOnAppDirectory: saveOnAppDirectory);
     } catch (e) {
       rethrow;
     }
@@ -78,11 +78,23 @@ class MobileIO implements ArDriveIO {
 /// This implementation uses the `file_saver` package.
 ///
 /// Throws an `FileSystemPermissionDeniedException` when user deny access to storage
+///
+/// `saveOnAppDirectory` is not supported on this implementation
 class MobileSelectableFolderFileSaver implements FileSaver {
+  final DartIOFileSaver _dartIOFileSaver;
+
+  MobileSelectableFolderFileSaver({DartIOFileSaver? dartIOFileSaver})
+      : _dartIOFileSaver = dartIOFileSaver ?? DartIOFileSaver();
+
   @override
-  Future<void> save(IOFile file) async {
+  Future<void> save(IOFile file, {bool saveOnAppDirectory = false}) async {
     await requestPermissions();
     await verifyPermissions();
+
+    if (saveOnAppDirectory) {
+      await _dartIOFileSaver.save(file, saveOnAppDirectory: saveOnAppDirectory);
+      return;
+    }
 
     await file_saver.FileSaver.instance.saveAs(
       name: file.name,
@@ -98,7 +110,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 /// It will save on `getDefaultMobileDownloadDir()`
 class DartIOFileSaver implements FileSaver {
   @override
-  Future<void> save(IOFile file) async {
+  Future<void> save(IOFile file, {bool saveOnAppDirectory = false}) async {
     await requestPermissions();
     await verifyPermissions();
 
@@ -111,10 +123,27 @@ class DartIOFileSaver implements FileSaver {
       fileName += '.$fileExtension';
     }
 
+    if (saveOnAppDirectory) {
+      await _saveOnAppDir(file, fileName);
+      return;
+    }
+
+    await _saveOnDownloadsDir(file, fileName);
+  }
+
+  Future<void> _saveOnDownloadsDir(IOFile file, String fileName) async {
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
     final newFile = File(defaultDownloadDir + fileName);
+
+    await newFile.writeAsBytes(await file.readAsBytes());
+  }
+
+  Future<void> _saveOnAppDir(IOFile file, String fileName) async {
+    final appDir = await getDefaultAppDir();
+
+    final newFile = File(appDir + fileName);
 
     await newFile.writeAsBytes(await file.readAsBytes());
   }
@@ -130,5 +159,5 @@ abstract class FileSaver {
         'The ${Platform.operatingSystem} platform is not supported');
   }
 
-  Future<void> save(IOFile file);
+  Future<void> save(IOFile file, {bool saveOnAppDirectory = false});
 }
