@@ -1,9 +1,12 @@
+// ignore_for_file: depend_on_referenced_packages
+
 @JS('window.streamSaver')
 library stream_saver;
 
+import 'dart:typed_data';
+
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
-import 'dart:typed_data';
 
 class Promise<T> {}
 

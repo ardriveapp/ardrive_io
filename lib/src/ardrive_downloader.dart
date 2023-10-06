@@ -3,7 +3,6 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/mobile/mobile_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 
@@ -16,17 +15,19 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 /// running at the time, it will only cancel the current one.
 ///
 // TODO: Add an interface for this class and implement a Web and mobile specific downloader
-class ArDriveDownloader {
+class ArDriveMobileDownloader {
   late String _currentTaskId;
 
   String get currentTaskId => _currentTaskId;
 
-  Stream<int> downloadFile(String downloadUrl, String fileName, String? contentType) async* {
+  Stream<int> downloadFile(
+      String downloadUrl, String fileName, String? contentType) async* {
     await requestPermissions();
     await verifyPermissions();
 
     final downloadDir = await getDefaultMobileDownloadDir();
-    final saveFileName = await nonexistentFileName(downloadDir, fileName, contentType);
+    final saveFileName =
+        await nonexistentFileName(downloadDir, fileName, contentType);
 
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,

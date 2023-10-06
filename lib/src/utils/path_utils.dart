@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/io_exception.dart';
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as path_provider;
@@ -122,7 +121,8 @@ Future<String> _getDefaultAndroidDir() async {
 /// Searches for a nonexistent filename in the given [saveDir] and returns it.
 /// If the file already exists, it will append a number to the filename in brackets.
 /// Returns only the name of the file as a string.
-Future<String> nonexistentFileName(String saveDir, String fileName, String? fileContentType) async {
+Future<String> nonexistentFileName(
+    String saveDir, String fileName, String? fileContentType) async {
   String potentialFileName;
   int counter = 0;
   File testFile;
@@ -141,18 +141,19 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
     } else if (fileContentType != null) {
       // For some reason `extensionFromMime` returns the (lowercase) input if it can't find
       // an extension. We only want to use the result if it is an actual extension.
-      final fileExtensionOrMime = mime.extensionFromMime(fileContentType); // excludes '.'
+      final fileExtensionOrMime =
+          mime.extensionFromMime(fileContentType); // excludes '.'
       if (fileExtensionOrMime != fileContentType.toLowerCase()) {
         fileExtension = fileExtensionOrMime;
       }
     }
-    
+
     if (fileExtension.isNotEmpty) {
       potentialFileName += '.$fileExtension';
     }
 
     testFile = File(saveDir + potentialFileName);
-    
+
     counter++;
 
     // TODO: Throw an exception on arbitrarily large counter?
@@ -162,6 +163,7 @@ Future<String> nonexistentFileName(String saveDir, String fileName, String? file
 }
 
 Future<File> nonexistentFile(String saveDir, IOFile ioFile) async {
-  final fileName = await nonexistentFileName(saveDir, ioFile.name, ioFile.contentType);
+  final fileName =
+      await nonexistentFileName(saveDir, ioFile.name, ioFile.contentType);
   return File(saveDir + fileName);
 }

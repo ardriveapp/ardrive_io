@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html';
-import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/utils/completer.dart';
@@ -68,7 +67,8 @@ class WebIO implements ArDriveIO {
   }
 
   @override
-  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) async* {
+  Stream<SaveStatus> saveFileStream(
+      IOFile file, Completer<bool> finalize) async* {
     if (FileSystemAccess.supported) {
       debugPrint('Saving using FileSystemAccess API');
       yield* _saveFileSystemAccessApi(file, finalize);
@@ -78,7 +78,8 @@ class WebIO implements ArDriveIO {
     }
   }
 
-  Stream<SaveStatus> _saveFileSystemAccessApi(IOFile file, Completer<bool> finalize) async* {
+  Stream<SaveStatus> _saveFileSystemAccessApi(
+      IOFile file, Completer<bool> finalize) async* {
     var bytesSaved = 0;
     final totalBytes = await file.length;
     yield SaveStatus(
@@ -87,30 +88,30 @@ class WebIO implements ArDriveIO {
     );
 
     try {
-      final extension = getFileExtension(name: file.name, contentType: file.contentType);
+      final extension =
+          getFileExtension(name: file.name, contentType: file.contentType);
 
       final handle = await window.showSaveFilePicker(
-        suggestedName: file.name,
-        excludeAcceptAllOption: true,
-        types: [
-          FilePickerAcceptType(
-            description: file.contentType,
-            accept: {
-              file.contentType: [extension]
-            },
-          ),
-        ],
-        startIn: WellKnownDirectory.downloads
-      );
+          suggestedName: file.name,
+          excludeAcceptAllOption: true,
+          types: [
+            FilePickerAcceptType(
+              description: file.contentType,
+              accept: {
+                file.contentType: [extension]
+              },
+            ),
+          ],
+          startIn: WellKnownDirectory.downloads);
 
       final writable = await handle.createWritable();
-      final writer =  writable.getWriter();
+      final writer = writable.getWriter();
 
       await for (final chunk in file.openReadStream()) {
         if (await completerMaybe(finalize) == false) break;
         await writer.ready;
         await writer.write(chunk);
-        
+
         bytesSaved += chunk.length;
         yield SaveStatus(
           bytesSaved: bytesSaved,
@@ -146,20 +147,21 @@ class WebIO implements ArDriveIO {
     }
   }
 
-  Stream<SaveStatus> _saveFileStreamSaver(IOFile file, Completer<bool> finalize) async* {
+  Stream<SaveStatus> _saveFileStreamSaver(
+      IOFile file, Completer<bool> finalize) async* {
     var bytesSaved = 0;
     final totalBytes = await file.length;
     yield SaveStatus(
       bytesSaved: bytesSaved,
       totalBytes: totalBytes,
     );
-    
+
     try {
       final writable = createWriteStream(file.name, {
         'size': await file.length,
       });
       final writer = writable.getWriter();
-      
+
       await for (final chunk in file.openReadStream()) {
         if (await completerMaybe(finalize) == false) break;
         await writer.readyFuture;
@@ -182,7 +184,7 @@ class WebIO implements ArDriveIO {
         await writer.closeFuture();
         writer.releaseLock();
       }
-      
+
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
