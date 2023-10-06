@@ -9,6 +9,8 @@ class FileSystemPermissionDeniedException extends IOException {
   List<Permission> permissionsDenied;
 }
 
+class FileReadWritePermissionDeniedException extends IOException {}
+
 class EntityPathException extends IOException {}
 
 class UnsupportedPlatformException extends IOException {

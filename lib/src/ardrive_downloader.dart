@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/mobile/mobile_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 
@@ -20,15 +21,17 @@ class ArDriveDownloader {
 
   String get currentTaskId => _currentTaskId;
 
-  Stream<int> downloadFile(String downloadUrl, String fileName) async* {
+  Stream<int> downloadFile(String downloadUrl, String fileName, String? contentType) async* {
     await requestPermissions();
     await verifyPermissions();
+
     final downloadDir = await getDefaultMobileDownloadDir();
+    final saveFileName = await nonexistentFileName(downloadDir, fileName, contentType);
 
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
       savedDir: downloadDir,
-      fileName: fileName,
+      fileName: saveFileName,
       saveInPublicStorage: true,
       showNotification: true,
       openFileFromNotification: false,

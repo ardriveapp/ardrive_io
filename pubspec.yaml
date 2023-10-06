@@ -30,6 +30,7 @@ dependencies:
   device_info_plus: ^9.0.3
   async: ^2.9.0
   path: ^1.8.3
+  file_system_access_api: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
