@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/utils/completer.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
+import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as p;
 
@@ -71,6 +74,15 @@ class MobileIO implements ArDriveIO {
       rethrow;
     }
   }
+
+  @override
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) async* {
+    try {
+      yield* _fileSaver.saveStream(file, finalize);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 /// Opens the file picker dialog to select the folder to save
@@ -92,6 +104,12 @@ class MobileSelectableFolderFileSaver implements FileSaver {
 
     return;
   }
+  
+  @override
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize) {
+    // file_saver doesn't seem to support support saving streams
+    throw UnimplementedError();
+  }
 }
 
 /// Saves a file using the `dart:io` library.
@@ -102,21 +120,74 @@ class DartIOFileSaver implements FileSaver {
     await requestPermissions();
     await verifyPermissions();
 
-    String fileName = file.name;
-
-    /// handles files without extension
-    if (p.extension(file.name).isEmpty) {
-      final fileExtension = mime.extensionFromMime(file.contentType);
-
-      fileName += '.$fileExtension';
-    }
-
     /// platform_specific_path/Downloads/
     final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-    final newFile = File(defaultDownloadDir + fileName);
+    final newFile = await nonexistentFile(defaultDownloadDir, file);
 
     await newFile.writeAsBytes(await file.readAsBytes());
+  }
+  
+  @override
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
+    
+    try {
+      await requestPermissions();
+      await verifyPermissions();
+
+      /// platform_specific_path/Downloads/
+      final defaultDownloadDir = await getDefaultMobileDownloadDir();
+
+      final newFile = await nonexistentFile(defaultDownloadDir, file);
+
+      final sink = newFile.openWrite();
+
+      // NOTE: This is an alternative to `addStream` with lower level control
+      const flushThresholdBytes = 50 * 1024 * 1024; // 50 MiB
+      var unflushedDataBytes = 0;
+      await for (final chunk in file.openReadStream()) {
+        if (await completerMaybe(finalize) == false) break;
+
+        sink.add(chunk);
+        unflushedDataBytes += chunk.length;
+        if (unflushedDataBytes > flushThresholdBytes) {
+          await sink.flush();
+          unflushedDataBytes = 0;
+        }
+
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
+      }
+      await sink.flush();
+      await sink.close();
+      
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('Cancelling saveStream...');
+        await newFile.delete();
+      }
+
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: finalizeResult,
+      );
+    } catch (e) {
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: false,
+      );
+    }
   }
 }
 
@@ -124,11 +195,13 @@ class DartIOFileSaver implements FileSaver {
 abstract class FileSaver {
   factory FileSaver() {
     if (Platform.isAndroid || Platform.isIOS) {
-      return MobileSelectableFolderFileSaver();
+      return DartIOFileSaver();
     }
     throw UnsupportedPlatformException(
         'The ${Platform.operatingSystem} platform is not supported');
   }
 
   Future<void> save(IOFile file);
+
+  Stream<SaveStatus> saveStream(IOFile file, Completer<bool> finalize);
 }

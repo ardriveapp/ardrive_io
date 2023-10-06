@@ -5,8 +5,12 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/utils/completer.dart';
+import 'package:ardrive_io/src/web/stream_saver.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_system_access_api/file_system_access_api.dart';
+import 'package:flutter/foundation.dart';
 
 /// Web implementation to use `ArDriveIO` API
 ///
@@ -60,6 +64,136 @@ class WebIO implements ArDriveIO {
       mimeType: file.contentType,
       name: file.name,
     ).saveTo(savePath);
+  }
+
+  @override
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) async* {
+    if (FileSystemAccess.supported) {
+      debugPrint('Saving using FileSystemAccess API');
+      yield* _saveFileSystemAccessApi(file, finalize);
+    } else {
+      debugPrint('Saving using StreamSaver.js');
+      yield* _saveFileStreamSaver(file, finalize);
+    }
+  }
+
+  Stream<SaveStatus> _saveFileSystemAccessApi(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
+
+    try {
+      final extension = getFileExtension(name: file.name, contentType: file.contentType);
+
+      final handle = await window.showSaveFilePicker(
+        suggestedName: file.name,
+        excludeAcceptAllOption: true,
+        types: [
+          FilePickerAcceptType(
+            description: file.contentType,
+            accept: {
+              file.contentType: [extension]
+            },
+          ),
+        ],
+        startIn: WellKnownDirectory.downloads
+      );
+
+      final writable = await handle.createWritable();
+      final writer =  writable.getWriter();
+
+      await for (final chunk in file.openReadStream()) {
+        if (await completerMaybe(finalize) == false) break;
+        await writer.ready;
+        await writer.write(chunk);
+        
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
+      }
+      writer.releaseLock();
+      await writable.close();
+
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('Cancelling saveFileStream...');
+        await handle.remove();
+      }
+
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: finalizeResult,
+      );
+    } on AbortError {
+      // User dismissed dialog or picked a file deemed too sensitive or dangerous.
+      throw ActionCanceledException();
+    } on NotAllowedError {
+      // User did not granted permission to readwrite in this file.
+      throw FileReadWritePermissionDeniedException();
+    } on Exception {
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: false,
+      );
+    }
+  }
+
+  Stream<SaveStatus> _saveFileStreamSaver(IOFile file, Completer<bool> finalize) async* {
+    var bytesSaved = 0;
+    final totalBytes = await file.length;
+    yield SaveStatus(
+      bytesSaved: bytesSaved,
+      totalBytes: totalBytes,
+    );
+    
+    try {
+      final writable = createWriteStream(file.name, {
+        'size': await file.length,
+      });
+      final writer = writable.getWriter();
+      
+      await for (final chunk in file.openReadStream()) {
+        if (await completerMaybe(finalize) == false) break;
+        await writer.readyFuture;
+        await writer.writeFuture(chunk);
+
+        bytesSaved += chunk.length;
+        yield SaveStatus(
+          bytesSaved: bytesSaved,
+          totalBytes: totalBytes,
+        );
+      }
+      await writer.readyFuture;
+
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        debugPrint('Cancelling saveFileStream...');
+        writer.abort();
+        await writable.abortFuture('Finalize result is false');
+      } else {
+        await writer.closeFuture();
+        writer.releaseLock();
+      }
+      
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: finalizeResult,
+      );
+    } on Exception {
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: false,
+      );
+    }
   }
 }
 
