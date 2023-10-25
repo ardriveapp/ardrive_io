@@ -175,20 +175,22 @@ class WebIO implements ArDriveIO {
       }
       await writer.readyFuture;
 
-      final finalizeResult = await finalize.future;
-      if (!finalizeResult) {
-        debugPrint('Cancelling saveFileStream...');
-        writer.abort();
-        await writable.abortFuture('Finalize result is false');
-      } else {
-        await writer.closeFuture();
-        writer.releaseLock();
-      }
+      // FIXME: this never ends on Firefox/Safari.
+      // final finalizeResult = await finalize.future;
+      // if (!finalizeResult) {
+      //   debugPrint('Cancelling saveFileStream...');
+      //   writer.abort();
+      //   await writable.abortFuture('Finalize result is false');
+      // } else {
+
+      await writer.closeFuture();
+      writer.releaseLock();
+      // }
 
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
-        saveResult: finalizeResult,
+        saveResult: true,
       );
     } on Exception {
       yield SaveStatus(
