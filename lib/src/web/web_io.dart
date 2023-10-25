@@ -174,9 +174,11 @@ class WebIO implements ArDriveIO {
         );
       }
       await writer.readyFuture;
+      debugPrint('writer ready');
 
       // FIXME: this never ends on Firefox/Safari.
       // final finalizeResult = await finalize.future;
+      // debugPrint('Finalize result: $finalizeResult');
       // if (!finalizeResult) {
       //   debugPrint('Cancelling saveFileStream...');
       //   writer.abort();
@@ -184,6 +186,7 @@ class WebIO implements ArDriveIO {
       // } else {
 
       await writer.closeFuture();
+      writer.close();
       writer.releaseLock();
       // }
 
