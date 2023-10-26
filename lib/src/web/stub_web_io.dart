@@ -12,7 +12,6 @@ class WebIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) {
-    // TODO: implement pickFile
     throw UnimplementedError();
   }
 
@@ -21,19 +20,21 @@ class WebIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) {
-    // TODO: implement pickFiles
     throw UnimplementedError();
   }
 
   @override
   Future<IOFolder> pickFolder() {
-    // TODO: implement pickFolder
     throw UnimplementedError();
   }
 
   @override
   Future<void> saveFile(IOFile file) {
-    // TODO: implement saveFile
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) {
     throw UnimplementedError();
   }
 }
@@ -53,21 +54,18 @@ class WebFileSystemProvider implements MultiFileProvider {
 
   @override
   Future<IOFolder> getFolder() {
-    // TODO: implement getFolder
     throw UnimplementedError();
   }
 
   @override
   Future<IOFile> pickFile(
       {List<String>? allowedExtensions, required FileSource fileSource}) {
-    // TODO: implement pickFile
     throw UnimplementedError();
   }
 
   @override
   Future<List<IOFile>> pickMultipleFiles(
       {List<String>? allowedExtensions, required FileSource fileSource}) {
-    // TODO: implement pickMultipleFiles
     throw UnimplementedError();
   }
 }

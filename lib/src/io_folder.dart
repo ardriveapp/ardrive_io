@@ -70,13 +70,13 @@ class _FileSystemFolder extends IOFolder {
   /// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
   /// the current level entities loading only `IOFile` and `IOFolder`
   Future<List<IOEntity>> _mountFolderStructure() async {
-    List<IOEntity> _children = [];
+    List<IOEntity> children = [];
 
     for (var fs in _folderContent) {
-      _children.add(await _addFolderNode(fs));
+      children.add(await _addFolderNode(fs));
     }
 
-    return _children;
+    return children;
   }
 
   Future<IOEntity> _addFolderNode(FileSystemEntity fsEntity) async {
