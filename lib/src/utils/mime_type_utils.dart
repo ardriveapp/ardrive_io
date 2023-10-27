@@ -14,8 +14,6 @@ String? lookupMimeType(String path, {List<int>? headerBytes}) {
     return applicationGZip;
   }
 
-  print(path);
-
   return mime.lookupMimeType(path, headerBytes: headerBytes);
 }
 
