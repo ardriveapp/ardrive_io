@@ -88,6 +88,16 @@ String getFileExtension({
   }
 }
 
+String getFileTypeFromMime({
+  required String contentType,
+}) {
+  return contentType.substring(contentType.lastIndexOf('/') + 1);
+}
+
+String getBasenameWithoutExtension(String fileName) {
+  return path.basenameWithoutExtension(fileName);
+}
+
 Future<String> _getDefaultIOSDir() async {
   final iosDirectory = await path_provider.getApplicationDocumentsDirectory();
   final iosDownloadsDirectory = Directory('${iosDirectory.path}/Downloads/');
