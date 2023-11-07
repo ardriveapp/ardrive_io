@@ -88,14 +88,12 @@ String getFileExtension({
   }
 }
 
-String getFileTypeFromMime({
-  required String contentType,
-}) {
+String getFileTypeFromMime({required String contentType}) {
   return contentType.substring(contentType.lastIndexOf('/') + 1);
 }
 
-String getBasenameWithoutExtension(String fileName) {
-  return path.basenameWithoutExtension(fileName);
+String getBasenameWithoutExtension({required String filePath}) {
+  return path.basenameWithoutExtension(filePath);
 }
 
 Future<String> _getDefaultIOSDir() async {

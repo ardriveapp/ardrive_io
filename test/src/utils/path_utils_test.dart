@@ -123,7 +123,9 @@ void main() {
 
   group('getBasenameWithoutExtension method', () {
     test('should return the basename without extension', () {
-      final basename = getBasenameWithoutExtension('file.pdf');
+      final basename = getBasenameWithoutExtension(
+        filePath: '/hola/que/tal/file.pdf',
+      );
 
       expect(basename, 'file');
     });
