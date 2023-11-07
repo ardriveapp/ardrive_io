@@ -116,8 +116,17 @@ void main() {
   group('getFileTypeFromMime method', () {
     test('should return the file type from mimetype', () {
       final type = getFileTypeFromMime(contentType: 'application/pdf');
-
       expect(type, 'pdf');
+    });
+
+    test('should return the file type for a different mimetype', () {
+      final type = getFileTypeFromMime(contentType: 'image/jpeg');
+      expect(type, 'jpeg');
+    });
+
+    test('should return null for an empty string', () {
+      final type = getFileTypeFromMime(contentType: '');
+      expect(type, '');
     });
   });
 
@@ -126,8 +135,35 @@ void main() {
       final basename = getBasenameWithoutExtension(
         filePath: '/hola/que/tal/file.pdf',
       );
-
       expect(basename, 'file');
+    });
+
+    test('should return the basename without extension', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/hola/que/tal/file.pdf.txt',
+      );
+      expect(basename, 'file.pdf');
+    });
+
+    test('should return the basename for a different file path', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/another/path/to/different.file',
+      );
+      expect(basename, 'different');
+    });
+
+    test('should return the basename for a file path without extension', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/path/to/file',
+      );
+      expect(basename, 'file');
+    });
+
+    test('should return an empty string for an empty string', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '',
+      );
+      expect(basename, '');
     });
   });
 }
