@@ -155,6 +155,7 @@ class IOFileAdapter {
     required DateTime lastModifiedDate,
     String? contentType,
   }) async {
+    print('fromReadStreamGenerator: $length');
     return _StreamFile(
       openReadStream,
       length,
@@ -201,6 +202,7 @@ class _IOFile implements IOFile {
 
   @override
   Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    print('openReadStream: $start, $end');
     return _file.openRead(start, end).map((data) => data as Uint8List);
   }
 
@@ -300,6 +302,7 @@ class _StreamFile implements IOFile {
 
   @override
   Stream<Uint8List> openReadStream([int start = 0, int? end]) {
+    print('openReadStream on _StreamFiler: $start, $end');
     return _openReadStream(start, end);
   }
 
@@ -347,18 +350,19 @@ class _FromXFile implements IOFile {
 
   @override
   Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
-    int globalOffset = start;
-    int globalEnd = end ?? await _file.length();
-    while (globalOffset < globalEnd) {
-      final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
-          ? globalEnd
-          : globalOffset + readStreamChunkSize;
+    print('openReadStream: $start, $end');
+    // int globalOffset = start;
+    // int globalEnd = end ?? await _file.length();
+    // while (globalOffset < globalEnd) {
+    //   final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
+    //       ? globalEnd
+    //       : globalOffset + readStreamChunkSize;
 
-      final chunk = await collectBytes(_file.openRead(globalOffset, chunkEnd));
-      yield chunk;
+    //   final chunk = await collectBytes(_file.openRead(globalOffset, chunkEnd));
+    //   yield chunk;
 
-      globalOffset += readStreamChunkSize;
-    }
+    //   globalOffset += readStreamChunkSize;
+    // }
   }
 
   @override

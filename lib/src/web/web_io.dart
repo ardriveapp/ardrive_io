@@ -241,23 +241,80 @@ class WebFileSystemProvider implements MultiFileProvider {
     );
   }
 
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
+    // final reader = FileReader();
+
+    // int globalOffset = start;
+    // int globalEnd = end ?? _file.size;
+    // while (globalOffset < globalEnd) {
+    //   final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
+    //       ? globalEnd
+    //       : globalOffset + readStreamChunkSize;
+
+    //   final blob = _file.slice(globalOffset, chunkEnd);
+    //   reader.readAsArrayBuffer(blob);
+    //   await reader.onLoad.first;
+
+    //   yield reader.result as Uint8List;
+
+    //   globalOffset += readStreamChunkSize;
+    // }
+  }
+
   @override
   Future<IOFile> pickFile({
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
-    final pickerResult = await FilePicker.platform.pickFiles(
-      allowedExtensions: allowedExtensions,
-      allowMultiple: false,
-      withReadStream: true,
-      withData: false,
-    );
+    FileUploadInputElement input = FileUploadInputElement();
+    input.click();
+    File? file;
 
-    if (pickerResult == null || pickerResult.files.length != 1) {
-      throw ActionCanceledException();
-    }
+    // Listen for changes on the input element to get the selected file
+    late StreamSubscription<Event> subscription;
 
-    return _platformFileToStreamFile(pickerResult.files.first);
+    subscription = input.onChange.listen((e) {
+      // Read files from input element
+      final files = input.files;
+      if (files!.isNotEmpty) {
+        print('file: ${files[0].name}');
+        file = files[0];
+
+        // // Read the file content as data URL
+        // reader.readAsDataUrl(file);
+        // reader.onLoadEnd.listen((e) {
+        //   // Do something with the file content
+        //   print(reader.result);
+        // });
+
+        subscription.cancel();
+      }
+    });
+
+    print('file: $file');
+
+    await Future.delayed(Duration(seconds: 2));
+
+    print('subscription ended: $file');
+
+    return WebFile(file!,
+        name: file!.name,
+        lastModifiedDate: file!.lastModifiedDate,
+        path: file!.relativePath!,
+        contentType: lookupMimeTypeWithDefaultType(file!.relativePath!));
+
+    // final pickerResult = await FilePicker.platform.pickFiles(
+    //   allowedExtensions: allowedExtensions,
+    //   allowMultiple: false,
+    //   withReadStream: true,
+    //   withData: false,
+    // );
+
+    // if (pickerResult == null || pickerResult.files.length != 1) {
+    //   throw ActionCanceledException();
+    // }
+
+    // return _platformFileToStreamFile(pickerResult.files.first);
   }
 
   @override
@@ -385,25 +442,61 @@ class WebFile implements IOFile {
 
   @override
   Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
-    if (_bytes != null) {
-      yield _bytes!.sublist(start, end ?? _bytes!.length);
-      return;
-    }
+    final StreamController<Uint8List> controller =
+        StreamController<Uint8List>();
 
-    final reader = FileReader();
+    print('openReadStream: $start, $end');
+    // if (_bytes != null) {
+    //   yield _bytes!.sublist(start, end ?? _bytes!.length);
+    //   return;
+    // }
 
+    // print('openReadStream: $start, $end');
+
+    // final reader = FileReader();
+
+    // Create a Web Worker
+    final worker = Worker('worker.js');
     int globalOffset = start;
     int globalEnd = end ?? _file.size;
+
+    // Listen for messages from the worker
+    worker.onMessage.listen((event) {
+      print('worker message: $event');
+      final chunk = event.data['chunk'];
+      print('worker message: ${chunk.runtimeType}');
+      if (chunk is List<dynamic>) {
+        print('worker message: ${chunk.length}');
+        controller.add(Uint8List.fromList(
+            Uint8List.fromList(chunk.map((e) => e as int).toList())));
+      }
+      // If we've reached the end, terminate the worker
+      if (globalOffset >= globalEnd) {
+        worker.terminate();
+      }
+    });
+
+    yield* controller.stream;
+
     while (globalOffset < globalEnd) {
       final chunkEnd = globalOffset + readStreamChunkSize > globalEnd
           ? globalEnd
           : globalOffset + readStreamChunkSize;
+      // Post data to the worker
+      worker.postMessage({
+        'file': _file,
+        'start': globalOffset,
+        'end': chunkEnd,
+        'chunkSize': readStreamChunkSize
+      });
 
-      final blob = _file.slice(globalOffset, chunkEnd);
-      reader.readAsArrayBuffer(blob);
-      await reader.onLoad.first;
+      await Future.delayed(Duration(milliseconds: 100));
 
-      yield reader.result as Uint8List;
+      // final blob = _file.slice(globalOffset, chunkEnd);
+      // reader.readAsArrayBuffer(blob);
+      // await reader.onLoad.first;
+
+      // yield reader.result as Uint8List;
 
       globalOffset += readStreamChunkSize;
     }
