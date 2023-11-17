@@ -184,13 +184,17 @@ class WebIO implements ArDriveIO {
     );
 
     try {
+      ardriveIODebugPrint('Creating writable stream...');
+
       final writable = createWriteStream(file.name, {
-        'size': await file.length,
+        'size': totalBytes,
       });
 
       final writer = writable.getWriter();
 
-      await for (final chunk in file.openReadStream()) {
+      await for (final chunk in file.openReadStream(0, totalBytes)) {
+        ardriveIODebugPrint('Writing ${chunk.length} bytes to file...');
+
         if (await completerMaybe(finalize) == false) break;
         await writer.readyFuture;
         await writer.writeFuture(chunk);
@@ -200,25 +204,25 @@ class WebIO implements ArDriveIO {
           bytesSaved: bytesSaved,
           totalBytes: totalBytes,
         );
+
+        ardriveIODebugPrint('save status: $bytesSaved/$totalBytes');
       }
 
-      await writer.readyFuture;
+      ardriveIODebugPrint('Finished writing to file. Closing file...');
 
-      ardriveIODebugPrint('writer ready');
+      // FIXME: this never ends on Firefox/Safari.
+      // final finalizeResult = await finalize.future;
+      // debugPrint('Finalize result: $finalizeResult');
+      // if (!finalizeResult) {
+      //   debugPrint('Cancelling saveFileStream...');
+      //   writer.abort();
+      //   await writable.abortFuture('Finalize result is false');
+      // } else {
 
-      finalize.complete(true);
-
-      final finalizeResult = await finalize.future;
-
-      if (!finalizeResult) {
-        ardriveIODebugPrint('Cancelling saveFileStream...');
-        writer.abort();
-        await writable.abortFuture('Finalize result is false');
-      } else {
-        await writer.closeFuture();
-        writer.close();
-        writer.releaseLock();
-      }
+      await writer.closeFuture();
+      writer.close();
+      writer.releaseLock();
+      // }
 
       yield SaveStatus(
         bytesSaved: bytesSaved,
