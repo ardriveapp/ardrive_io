@@ -3,7 +3,7 @@ import 'package:ardrive_io/src/utils/path_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('test method getFolderNameFromPath', () {
+  group('getFolderNameFromPath method', () {
     test('should return correct folder name', () {
       expect(getBasenameFromPath('some-folder'), 'some-folder');
       expect(getBasenameFromPath('/some-folder'), 'some-folder');
@@ -17,7 +17,7 @@ void main() {
           throwsA(const TypeMatcher<EntityPathException>()));
     });
   });
-  group('test method getDirname', () {
+  group('getDirname method', () {
     test('should return correct dirname', () {
       expect(getDirname('/some-folder/file'), '/some-folder');
       expect(getDirname('/some-folder/path/file.png'), '/some-folder/path');
@@ -32,7 +32,7 @@ void main() {
     });
   });
 
-  group('test method getFileExtension', () {
+  group('getFileExtension method', () {
     test('should return the extension from contentType and return with the .',
         () {
       /// .pdf
@@ -110,6 +110,60 @@ void main() {
       );
 
       expect(ext, 'conf');
+    });
+  });
+
+  group('getFileTypeFromMime method', () {
+    test('should return the file type from mimetype', () {
+      final type = getFileTypeFromMime(contentType: 'application/pdf');
+      expect(type, 'pdf');
+    });
+
+    test('should return the file type for a different mimetype', () {
+      final type = getFileTypeFromMime(contentType: 'image/jpeg');
+      expect(type, 'jpeg');
+    });
+
+    test('should return null for an empty string', () {
+      final type = getFileTypeFromMime(contentType: '');
+      expect(type, '');
+    });
+  });
+
+  group('getBasenameWithoutExtension method', () {
+    test('should return the basename without extension', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/hola/que/tal/file.pdf',
+      );
+      expect(basename, 'file');
+    });
+
+    test('should return the basename without extension', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/hola/que/tal/file.pdf.txt',
+      );
+      expect(basename, 'file.pdf');
+    });
+
+    test('should return the basename for a different file path', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/another/path/to/different.file',
+      );
+      expect(basename, 'different');
+    });
+
+    test('should return the basename for a file path without extension', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '/path/to/file',
+      );
+      expect(basename, 'file');
+    });
+
+    test('should return an empty string for an empty string', () {
+      final basename = getBasenameWithoutExtension(
+        filePath: '',
+      );
+      expect(basename, '');
     });
   });
 }
