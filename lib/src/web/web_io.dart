@@ -5,6 +5,7 @@ import 'dart:html';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/utils/completer.dart';
+import 'package:ardrive_io/src/utils/print_utils.dart';
 import 'package:ardrive_io/src/web/stream_saver.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
@@ -70,10 +71,10 @@ class WebIO implements ArDriveIO {
   Stream<SaveStatus> saveFileStream(
       IOFile file, Completer<bool> finalize) async* {
     if (FileSystemAccess.supported) {
-      debugPrint('Saving using FileSystemAccess API');
+      ardriveIODebugPrint('Saving using FileSystemAccess API');
       yield* _saveFileSystemAccessApi(file, finalize);
     } else {
-      debugPrint('Saving using StreamSaver.js');
+      ardriveIODebugPrint('Saving using StreamSaver.js');
       yield* _saveFileStreamSaver(file, finalize);
     }
   }
@@ -108,37 +109,61 @@ class WebIO implements ArDriveIO {
       final writer = writable.getWriter();
 
       await for (final chunk in file.openReadStream()) {
-        if (await completerMaybe(finalize) == false) break;
+        if (await completerMaybe(finalize) == false) {
+          ardriveIODebugPrint('Cancelling saveFileStream...');
+          break;
+        }
+
         await writer.ready;
         await writer.write(chunk);
 
+        ardriveIODebugPrint('Wrote ${chunk.length} bytes to file');
+
         bytesSaved += chunk.length;
+
+        ardriveIODebugPrint('Bytes saved: $bytesSaved');
+
         yield SaveStatus(
           bytesSaved: bytesSaved,
           totalBytes: totalBytes,
         );
       }
+
+      ardriveIODebugPrint('Finished writing to file');
+
+      ardriveIODebugPrint('Closing file...');
       writer.releaseLock();
       await writable.close();
+      finalize.complete(true);
+
+      ardriveIODebugPrint('Finalizing saveFileStream...');
 
       final finalizeResult = await finalize.future;
       if (!finalizeResult) {
-        debugPrint('Cancelling saveFileStream...');
+        ardriveIODebugPrint('Cancelling saveFileStream...');
         await handle.remove();
       }
+
+      ardriveIODebugPrint('SaveFileStream finalized');
 
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
         saveResult: finalizeResult,
       );
+
+      ardriveIODebugPrint('SaveFileStream yielded');
     } on AbortError {
       // User dismissed dialog or picked a file deemed too sensitive or dangerous.
+      ardriveIODebugPrint(
+          'User dismissed dialog or picked a file deemed too sensitive or dangerous.');
       throw ActionCanceledException();
     } on NotAllowedError {
       // User did not granted permission to readwrite in this file.
       throw FileReadWritePermissionDeniedException();
     } on Exception {
+      ardriveIODebugPrint(
+          '[ardrive_io]: failed to save file using FileSystemAccess API');
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
@@ -150,7 +175,9 @@ class WebIO implements ArDriveIO {
   Stream<SaveStatus> _saveFileStreamSaver(
       IOFile file, Completer<bool> finalize) async* {
     var bytesSaved = 0;
+
     final totalBytes = await file.length;
+
     yield SaveStatus(
       bytesSaved: bytesSaved,
       totalBytes: totalBytes,
@@ -160,6 +187,7 @@ class WebIO implements ArDriveIO {
       final writable = createWriteStream(file.name, {
         'size': await file.length,
       });
+
       final writer = writable.getWriter();
 
       await for (final chunk in file.openReadStream()) {
@@ -173,22 +201,24 @@ class WebIO implements ArDriveIO {
           totalBytes: totalBytes,
         );
       }
+
       await writer.readyFuture;
-      debugPrint('writer ready');
 
-      // FIXME: this never ends on Firefox/Safari.
-      // final finalizeResult = await finalize.future;
-      // debugPrint('Finalize result: $finalizeResult');
-      // if (!finalizeResult) {
-      //   debugPrint('Cancelling saveFileStream...');
-      //   writer.abort();
-      //   await writable.abortFuture('Finalize result is false');
-      // } else {
+      ardriveIODebugPrint('writer ready');
 
-      await writer.closeFuture();
-      writer.close();
-      writer.releaseLock();
-      // }
+      finalize.complete(true);
+
+      final finalizeResult = await finalize.future;
+
+      if (!finalizeResult) {
+        ardriveIODebugPrint('Cancelling saveFileStream...');
+        writer.abort();
+        await writable.abortFuture('Finalize result is false');
+      } else {
+        await writer.closeFuture();
+        writer.close();
+        writer.releaseLock();
+      }
 
       yield SaveStatus(
         bytesSaved: bytesSaved,
