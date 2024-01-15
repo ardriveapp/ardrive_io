@@ -1,5 +1,4 @@
-import 'package:ardrive_io/src/io_exception.dart';
-import 'package:ardrive_io/src/utils/path_utils.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -76,7 +75,7 @@ void main() {
     test('should return the extension from mimetype name without .', () {
       final ext = getFileExtension(
         name: 'file',
-        contentType: 'application/octet-stream',
+        contentType: octetStream,
         withExtensionDot: false,
       );
 
