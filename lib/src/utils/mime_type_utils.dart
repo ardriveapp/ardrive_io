@@ -17,9 +17,11 @@ String? lookupMimeType(String path, {List<int>? headerBytes}) {
   return mime.lookupMimeType(path, headerBytes: headerBytes);
 }
 
-String lookupMimeTypeWithDefaultType(String path, {List<int>? headerBytes}) =>
-    lookupMimeType(path, headerBytes: headerBytes) ??
-    'application/octet-stream';
+String lookupMimeTypeWithDefaultType(String path, {List<int>? headerBytes}) {
+  path = path.toLowerCase();
+
+  return lookupMimeType(path, headerBytes: headerBytes) ?? octetStream;
+}
 
 /// This implementation is specific for `file_saver` package.
 MimeType getMimeTypeFromString(String mimeType) {
@@ -76,3 +78,5 @@ MimeType getMimeTypeFromString(String mimeType) {
       return MimeType.OTHER;
   }
 }
+
+const String octetStream = 'application/octet-stream';
