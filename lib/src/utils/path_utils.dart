@@ -69,7 +69,7 @@ String getFileExtension({
   required String contentType,
   bool withExtensionDot = true,
 }) {
-  String ext = path.extension(name);
+  String ext = getFileExtensionFromFileName(fileName: name);
 
   if (ext.isNotEmpty) {
     if (withExtensionDot) {
@@ -86,6 +86,10 @@ String getFileExtension({
 
     return ext;
   }
+}
+
+String getFileExtensionFromFileName({required String fileName}) {
+  return path.extension(fileName);
 }
 
 String getFileTypeFromMime({required String contentType}) {
