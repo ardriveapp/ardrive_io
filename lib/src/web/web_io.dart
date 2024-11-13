@@ -345,6 +345,31 @@ class FolderPicker {
       folderInput.removeAttribute('webkitdirectory');
       folderInput.remove();
     });
+
+    folderInput.onAbort.listen((e) {
+      folderController.close();
+    });
+
+    folderInput.onError.listen((e) {
+      folderController.close();
+    });
+
+    folderInput.onSuspend.listen((e) {
+      folderController.close();
+    });
+
+    folderInput.onLoad.listen((e) {
+      folderController.close();
+    });
+
+    folderInput.onFocus.listen((e) {
+      if (folderInput.files == null || folderInput.files!.isEmpty) {
+        // User canceled the dialog
+        folderController.close();
+        folderInput.removeAttribute('webkitdirectory');
+        folderInput.remove();
+      }
+    });
   }
 
   WebFile _mountFile(File e) {

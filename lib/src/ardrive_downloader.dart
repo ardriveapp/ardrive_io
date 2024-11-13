@@ -84,7 +84,7 @@ class ArDriveMobileDownloader {
   }
 
   static Future<void> initialize() async {
-    if (kIsWeb) {
+    if (kIsWeb || FlutterDownloader.initialized) {
       return;
     }
 
