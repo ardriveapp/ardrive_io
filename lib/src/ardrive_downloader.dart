@@ -6,6 +6,14 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 
+abstract interface class ArDriveIODownloader {
+  Stream<int> downloadFile(
+      String downloadUrl, String fileName, String? contentType);
+  Future<void> cancelDownload();
+  Future<void> openCurrentDownload();
+  Future<void> initialize();
+}
+
 /// Perform a download in background
 ///
 /// `donwloadFile` downloads a file from `downloadUrl` and saves at the application
@@ -15,11 +23,12 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 /// running at the time, it will only cancel the current one.
 ///
 // TODO: Add an interface for this class and implement a Web and mobile specific downloader
-class ArDriveMobileDownloader {
+class ArDriveMobileDownloader implements ArDriveIODownloader {
   late String _currentTaskId;
 
   String get currentTaskId => _currentTaskId;
 
+  @override
   Stream<int> downloadFile(
       String downloadUrl, String fileName, String? contentType) async* {
     await requestPermissions();
@@ -83,7 +92,8 @@ class ArDriveMobileDownloader {
     return controller.stream;
   }
 
-  static Future<void> initialize() async {
+  @override
+  Future<void> initialize() async {
     if (kIsWeb || FlutterDownloader.initialized) {
       return;
     }
@@ -98,6 +108,7 @@ class ArDriveMobileDownloader {
     FlutterDownloader.registerCallback(downloadCallback);
   }
 
+  @override
   Future<void> cancelDownload() async {
     if (kIsWeb) {
       return;
@@ -110,6 +121,7 @@ class ArDriveMobileDownloader {
     await FlutterDownloader.cancel(taskId: _currentTaskId);
   }
 
+  @override
   Future<void> openCurrentDownload() async {
     final canOpen = await FlutterDownloader.open(taskId: _currentTaskId);
 
