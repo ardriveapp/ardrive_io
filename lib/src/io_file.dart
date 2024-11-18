@@ -106,8 +106,13 @@ class IOFileAdapter {
 
   Future<IOFile> fromXFile(XFile file) async {
     final lastModified = await file.lastModified();
-    final contentType =
-        file.mimeType ?? lookupMimeTypeWithDefaultType(file.path);
+    String contentType;
+
+    if (file.mimeType != null && file.mimeType!.isNotEmpty) {
+      contentType = file.mimeType!;
+    } else {
+      contentType = lookupMimeTypeWithDefaultType(file.path);
+    }
 
     return _FromXFile(
       file,
